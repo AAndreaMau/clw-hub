@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CLW SOP Hub</title>
-<!-- Microsoft Authentication Library -->
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -514,7 +512,7 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
   <div style="display:flex;align-items:center;gap:8px">
     <span class="sync-time" id="sync-last-saved"></span>
     <button class="sync-btn" id="sync-save-btn" onclick="syncSave()" style="display:none">&#x2191; Salva ora</button>
-    <button class="sync-btn login" id="sync-login-btn" onclick="syncLogin()">&#x1F464; Accedi con Microsoft</button>
+    <button class="sync-btn login" id="sync-login-btn" onclick="window.open('https://clw736.sharepoint.com','_blank')" style="display:none">&#x1F464; Apri SharePoint</button>
     <button class="sync-btn" id="sync-logout-btn" onclick="syncLogout()" style="display:none">Esci</button>
   </div>
 </div>
@@ -3253,172 +3251,221 @@ showTab = function(id,btn){
 /* Projects can set p.dateWon when created — expose a setter */
 
 /* ═══════════════════════════════════════
-   MICROSOFT GRAPH SYNC MODULE
-   CLW Hub — Shared OneDrive Storage
-   Data file: /CLW Hub/clw-hub-data.json
+   SHAREPOINT SYNC MODULE
+   CLW Hub — SharePoint REST API
+   No Azure AD required — uses existing
+   Microsoft 365 browser session
 ═══════════════════════════════════════ */
 
-var SYNC_CLIENT_ID = '3c3f0ac0-52e0-4438-a3f5-10ccf58114ef';
-var SYNC_TENANT_ID = 'db53e46f-3f53-4096-9e75-d466064e11c8';
-var SYNC_FILE_NAME = 'clw-hub-data.json';
-var SYNC_FOLDER    = 'CLW Hub';
+var SP_SITE    = 'https://clw736.sharepoint.com/sites/CLW.CONSULTING';
+var SP_FOLDER  = 'CLW Hub';
+var SP_FILE    = 'clw-hub-data.json';
+var SP_API     = SP_SITE + "/_api/web/GetFolderByServerRelativeUrl('CLW Hub')";
 
-var syncMsal = null;
-var syncAccount = null;
-var syncPollTimer = null;
-var syncLastSaved = null;
-var syncIsSaving = false;
-var syncIsLoading = false;
-var syncFileId = null; // cached OneDrive file id
+var syncPollTimer   = null;
+var syncLastSaved   = null;
+var syncIsSaving    = false;
+var syncIsLoading   = false;
+var syncCurrentUser = null;
 
-/* ── Init MSAL ── */
-function syncInitMsal() {
-  if (typeof msal === 'undefined') {
-    console.warn('MSAL not loaded');
-    return false;
-  }
-  if (syncMsal) return true;
+/* ── Get SharePoint Request Digest (required for write operations) ── */
+async function spGetDigest() {
   try {
-    syncMsal = new msal.PublicClientApplication({
-      auth: {
-        clientId: SYNC_CLIENT_ID,
-        authority: 'https://login.microsoftonline.com/' + SYNC_TENANT_ID,
-        redirectUri: window.location.href.split('?')[0].split('#')[0]
+    var resp = await fetch(SP_SITE + '/_api/contextinfo', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json;odata=verbose',
+        'Content-Type': 'application/json;odata=verbose'
       },
-      cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
+      credentials: 'include'
     });
-    return true;
+    if (!resp.ok) throw new Error('Digest failed: ' + resp.status);
+    var data = await resp.json();
+    return data.d.GetContextWebInformation.FormDigestValue;
   } catch(e) {
-    console.error('MSAL init error:', e);
-    return false;
-  }
-}
-
-/* ── Get token silently or via popup ── */
-async function syncGetToken() {
-  if (!syncInitMsal()) return null;
-  var scopes = ['Files.ReadWrite', 'User.Read'];
-  // Try silent first
-  var accounts = syncMsal.getAllAccounts();
-  if (accounts.length > 0) {
-    try {
-      var resp = await syncMsal.acquireTokenSilent({ scopes: scopes, account: accounts[0] });
-      syncAccount = accounts[0];
-      return resp.accessToken;
-    } catch(e) { /* fall through to popup */ }
-  }
-  // Popup login
-  try {
-    var resp = await syncMsal.acquireTokenPopup({ scopes: scopes });
-    syncAccount = resp.account;
-    return resp.accessToken;
-  } catch(e) {
-    console.error('Token error:', e);
+    console.error('Digest error:', e);
     return null;
   }
 }
 
-/* ── Login ── */
-async function syncLogin() {
-  syncSetStatus('syncing', 'Accesso in corso…');
-  var token = await syncGetToken();
-  if (!token) { syncSetStatus('offline', 'Accesso fallito'); return; }
-  // Get user info
+/* ── Get current user ── */
+async function spGetUser() {
   try {
-    var me = await fetch('https://graph.microsoft.com/v1.0/me', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    }).then(function(r){return r.json();});
-    syncAccount._displayName = me.displayName || me.userPrincipalName;
-    syncAccount._initials = (me.displayName||'?').split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
-  } catch(e){}
-
-  syncSetStatus('syncing', 'Caricamento dati…');
-  document.getElementById('sync-login-btn').style.display = 'none';
-  document.getElementById('sync-logout-btn').style.display = 'block';
-  document.getElementById('sync-save-btn').style.display = 'block';
-
-  // Load data from OneDrive
-  await syncLoad(token);
-
-  // Start polling every 30 seconds
-  if (syncPollTimer) clearInterval(syncPollTimer);
-  syncPollTimer = setInterval(async function() {
-    var t = await syncGetToken();
-    if (t) await syncPoll(t);
-  }, 30000);
-}
-
-/* ── Logout ── */
-function syncLogout() {
-  if (syncPollTimer) clearInterval(syncPollTimer);
-  syncMsal.logoutPopup().catch(function(){});
-  syncAccount = null;
-  syncFileId = null;
-  document.getElementById('sync-login-btn').style.display = 'block';
-  document.getElementById('sync-logout-btn').style.display = 'none';
-  document.getElementById('sync-save-btn').style.display = 'none';
-  syncSetStatus('logged-out', 'Non connesso — i dati sono locali');
-  document.getElementById('sync-avatars').innerHTML = '';
-  document.getElementById('sync-last-saved').textContent = '';
-}
-
-/* ── Ensure folder and file exist ── */
-async function syncEnsureFile(token) {
-  var headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
-
-  // Check if folder exists, create if not
-  try {
-    await fetch("https://graph.microsoft.com/v1.0/me/drive/root:/" + SYNC_FOLDER + ":", { headers: headers });
-  } catch(e) {}
-
-  // Try to create folder (silently fails if exists)
-  try {
-    await fetch("https://graph.microsoft.com/v1.0/me/drive/root/children", {
-      method: 'POST', headers: headers,
-      body: JSON.stringify({ name: SYNC_FOLDER, folder: {}, '@microsoft.graph.conflictBehavior': 'fail' })
+    var resp = await fetch(SP_SITE + '/_api/web/currentuser?$select=Title,Email', {
+      headers: { 'Accept': 'application/json;odata=verbose' },
+      credentials: 'include'
     });
-  } catch(e) {}
+    if (!resp.ok) return null;
+    var data = await resp.json();
+    return {
+      name: data.d.Title,
+      email: data.d.Email,
+      initials: data.d.Title.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase()
+    };
+  } catch(e) { return null; }
+}
 
-  // Check if file exists
-  var checkResp = await fetch(
-    "https://graph.microsoft.com/v1.0/me/drive/root:/" + SYNC_FOLDER + "/" + SYNC_FILE_NAME + ":",
-    { headers: { 'Authorization': 'Bearer ' + token } }
-  );
+/* ── Ensure CLW Hub folder exists ── */
+async function spEnsureFolder(digest) {
+  try {
+    // Check if folder exists
+    var check = await fetch(
+      SP_SITE + "/_api/web/GetFolderByServerRelativeUrl('/" + SP_FOLDER + "')",
+      { headers: { 'Accept': 'application/json;odata=verbose' }, credentials: 'include' }
+    );
+    if (check.ok) return true;
 
-  if (checkResp.ok) {
-    var meta = await checkResp.json();
-    syncFileId = meta.id;
-    return meta.id;
-  }
+    // Create folder
+    await fetch(SP_SITE + "/_api/web/folders", {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json;odata=verbose',
+        'Content-Type': 'application/json;odata=verbose',
+        'X-RequestDigest': digest
+      },
+      credentials: 'include',
+      body: JSON.stringify({ '__metadata': { 'type': 'SP.Folder' }, 'ServerRelativeUrl': '/' + SP_FOLDER })
+    });
+    return true;
+  } catch(e) { return false; }
+}
 
-  // Create empty file
-  var createResp = await fetch(
-    "https://graph.microsoft.com/v1.0/me/drive/root:/" + SYNC_FOLDER + "/" + SYNC_FILE_NAME + ":/content",
-    {
-      method: 'PUT',
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ version: 1, savedAt: new Date().toISOString(), savedBy: '', data: {} })
+/* ── Load data from SharePoint ── */
+async function spLoad() {
+  syncIsLoading = true;
+  syncSetStatus('syncing', 'Caricamento dati...');
+  try {
+    var fileUrl = SP_SITE + "/_api/web/GetFileByServerRelativeUrl('/" + SP_FOLDER + "/" + SP_FILE + "')/$value";
+    var resp = await fetch(fileUrl, {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'include'
+    });
+
+    if (resp.status === 404) {
+      // File doesn't exist yet — this is first run
+      syncSetStatus('connected', 'Connesso — primo avvio, nessun dato precedente');
+      syncIsLoading = false;
+      return;
     }
-  );
-  var created = await createResp.json();
-  syncFileId = created.id;
-  return created.id;
+    if (!resp.ok) throw new Error('Load failed: ' + resp.status);
+
+    var bundle = await resp.json();
+    syncApplyData(bundle);
+
+    if (bundle.savedAt) {
+      var dt = new Date(bundle.savedAt);
+      var by = bundle.savedBy ? ' da ' + bundle.savedBy.split(' ')[0] : '';
+      document.getElementById('sync-last-saved').textContent =
+        'Ultimo salvataggio: ' + dt.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) + by;
+    }
+    syncSetStatus('connected', 'Connesso' + (syncCurrentUser ? ' come ' + syncCurrentUser.name : ''));
+    syncIsLoading = false;
+    return true;
+  } catch(e) {
+    console.error('Load error:', e);
+    syncSetStatus('offline', 'Errore caricamento — sei connesso a SharePoint?');
+    syncIsLoading = false;
+    return false;
+  }
+}
+
+/* ── Save data to SharePoint ── */
+async function syncSave() {
+  if (syncIsSaving) return;
+  syncIsSaving = true;
+
+  var saveBtn = document.getElementById('sync-save-btn');
+  if (saveBtn) { saveBtn.textContent = '⏳ Salvando...'; saveBtn.disabled = true; }
+  syncSetStatus('syncing', 'Salvataggio in corso...');
+
+  try {
+    var digest = await spGetDigest();
+    if (!digest) throw new Error('Impossibile ottenere il token SharePoint. Sei connesso a Microsoft 365?');
+
+    await spEnsureFolder(digest);
+
+    var bundle = syncBundleData();
+    var json = JSON.stringify(bundle);
+
+    // Upload file (creates or overwrites)
+    var uploadUrl = SP_SITE + "/_api/web/GetFolderByServerRelativeUrl('/" + SP_FOLDER + "')/Files/add(url='" + SP_FILE + "',overwrite=true)";
+    var resp = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json;odata=verbose',
+        'X-RequestDigest': digest,
+        'Content-Type': 'application/json;odata=verbose'
+      },
+      credentials: 'include',
+      body: json
+    });
+
+    if (!resp.ok) {
+      var errText = await resp.text();
+      throw new Error('Save failed ' + resp.status + ': ' + errText.slice(0, 200));
+    }
+
+    syncLastSaved = new Date();
+    var timeStr = syncLastSaved.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
+    var name = syncCurrentUser ? syncCurrentUser.name.split(' ')[0] : 'tu';
+    document.getElementById('sync-last-saved').textContent = 'Salvato alle ' + timeStr + ' da ' + name;
+    syncSetStatus('connected', 'Connesso' + (syncCurrentUser ? ' come ' + syncCurrentUser.name : ''));
+
+    if (saveBtn) { saveBtn.textContent = '✓ Salvato'; saveBtn.disabled = false; }
+    setTimeout(function(){ if(saveBtn) saveBtn.textContent = '↑ Salva ora'; }, 2000);
+
+  } catch(e) {
+    console.error('Save error:', e);
+    syncSetStatus('offline', 'Errore salvataggio');
+    if (saveBtn) { saveBtn.textContent = '↑ Salva ora'; saveBtn.disabled = false; }
+    alert('Errore nel salvataggio su SharePoint:\n\n' + e.message + '\n\nAssicurati di essere connesso a Microsoft 365 nello stesso browser.');
+  }
+  syncIsSaving = false;
+}
+
+/* ── Poll for changes every 30 seconds ── */
+async function syncPoll() {
+  if (syncIsSaving || syncIsLoading) return;
+  try {
+    // Get file metadata to check last modified
+    var metaUrl = SP_SITE + "/_api/web/GetFileByServerRelativeUrl('/" + SP_FOLDER + "/" + SP_FILE + "')?$select=TimeLastModified,ModifiedBy/Title&$expand=ModifiedBy";
+    var resp = await fetch(metaUrl, {
+      headers: { 'Accept': 'application/json;odata=verbose' },
+      credentials: 'include'
+    });
+    if (!resp.ok) return;
+    var data = await resp.json();
+    var serverTime = new Date(data.d.TimeLastModified);
+    var modifiedBy = data.d.ModifiedBy ? data.d.ModifiedBy.Title : '';
+    var myName = syncCurrentUser ? syncCurrentUser.name : '';
+
+    // If someone else saved more recently than our last save
+    if (!syncLastSaved || serverTime > new Date(syncLastSaved.getTime() + 5000)) {
+      if (modifiedBy !== myName) {
+        // Another user saved — reload
+        syncSetStatus('syncing', 'Aggiornamento da ' + modifiedBy.split(' ')[0] + '...');
+        await spLoad();
+        syncLastSaved = serverTime;
+        syncToast('📥 Dati aggiornati da ' + modifiedBy.split(' ')[0]);
+      }
+    }
+  } catch(e) { /* silent fail on poll */ }
 }
 
 /* ── Bundle all app data ── */
 function syncBundleData() {
   return {
-    version: 2,
+    version: 3,
     savedAt: new Date().toISOString(),
-    savedBy: syncAccount ? (syncAccount._displayName || syncAccount.username) : 'unknown',
+    savedBy: syncCurrentUser ? syncCurrentUser.name : 'unknown',
     data: {
-      projects:          typeof projects          !== 'undefined' ? projects          : [],
-      timesheetEntries:  typeof timesheetEntries  !== 'undefined' ? timesheetEntries  : [],
-      tsRows:            typeof tsRows            !== 'undefined' ? tsRows            : [],
-      l10Data:           typeof l10Data           !== 'undefined' ? l10Data           : {},
-      fcWon:             typeof fcWon             !== 'undefined' ? fcWon             : [],
-      fcForecast:        typeof fcForecast        !== 'undefined' ? fcForecast        : [],
-      roiRows:           typeof roiRows           !== 'undefined' ? roiRows           : []
+      projects:         typeof projects         !== 'undefined' ? projects         : [],
+      timesheetEntries: typeof timesheetEntries !== 'undefined' ? timesheetEntries : [],
+      tsRows:           typeof tsRows           !== 'undefined' ? tsRows           : [],
+      l10Data:          typeof l10Data          !== 'undefined' ? l10Data          : {},
+      fcWon:            typeof fcWon            !== 'undefined' ? fcWon            : [],
+      fcForecast:       typeof fcForecast       !== 'undefined' ? fcForecast       : [],
+      roiRows:          typeof roiRows          !== 'undefined' ? roiRows          : []
     }
   };
 }
@@ -3428,236 +3475,93 @@ function syncApplyData(bundle) {
   if (!bundle || !bundle.data) return;
   var d = bundle.data;
   if (d.projects         !== undefined) { projects         = d.projects;         renderProjList(); renderWorkload(); }
-  if (d.timesheetEntries !== undefined) { timesheetEntries = d.timesheetEntries; }
-  if (d.tsRows           !== undefined) { tsRows           = d.tsRows;           }
-  if (d.l10Data          !== undefined) { l10Data          = d.l10Data;          }
-  if (d.fcWon            !== undefined) { fcWon            = d.fcWon;            }
-  if (d.fcForecast       !== undefined) { fcForecast       = d.fcForecast;       }
-  if (d.roiRows          !== undefined) { roiRows          = d.roiRows;          }
-  // Re-render whichever tab is active
+  if (d.timesheetEntries !== undefined)   timesheetEntries = d.timesheetEntries;
+  if (d.tsRows           !== undefined)   tsRows           = d.tsRows;
+  if (d.l10Data          !== undefined)   l10Data          = d.l10Data;
+  if (d.fcWon            !== undefined)   fcWon            = d.fcWon;
+  if (d.fcForecast       !== undefined)   fcForecast       = d.fcForecast;
+  if (d.roiRows          !== undefined)   roiRows          = d.roiRows;
+
+  // Re-render active tab
   var activeTab = document.querySelector('.content.active');
   if (activeTab) {
-    var tabId = activeTab.id.replace('tab-','');
-    if (tabId === 'timesheet')  renderTimesheet();
-    if (tabId === 'l10')        l10Render();
-    if (tabId === 'forecast')   fcInit();
-    if (tabId === 'projects')   renderAllPanels();
-  }
-  // Update last saved label
-  if (bundle.savedAt) {
-    var dt = new Date(bundle.savedAt);
-    var by = bundle.savedBy ? ' da ' + bundle.savedBy.split(' ')[0] : '';
-    document.getElementById('sync-last-saved').textContent =
-      'Ultimo salvataggio: ' + dt.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'}) + by;
+    var id = activeTab.id.replace('tab-','');
+    if (id==='timesheet') renderTimesheet();
+    if (id==='l10')       l10Render();
+    if (id==='forecast')  fcInit();
+    if (id==='projects')  renderAllPanels();
   }
 }
 
-/* ── Load from OneDrive ── */
-async function syncLoad(token) {
-  syncIsLoading = true;
-  try {
-    var fileId = await syncEnsureFile(token);
-    var resp = await fetch(
-      "https://graph.microsoft.com/v1.0/me/drive/items/" + fileId + "/content",
-      { headers: { 'Authorization': 'Bearer ' + token } }
-    );
-    if (!resp.ok) throw new Error('Load failed: ' + resp.status);
-    var bundle = await resp.json();
-    syncApplyData(bundle);
-    syncSetStatus('connected',
-      'Connesso come ' + (syncAccount._displayName || syncAccount.username));
-  } catch(e) {
-    console.error('Load error:', e);
-    syncSetStatus('connected', 'Connesso — nessun dato precedente trovato');
-  }
-  syncIsLoading = false;
-}
-
-/* ── Save to OneDrive ── */
-async function syncSave() {
-  if (syncIsSaving) return;
-  if (!syncAccount) { alert('Accedi prima con Microsoft per salvare.'); return; }
-  syncIsSaving = true;
-  syncSetStatus('syncing', 'Salvataggio in corso…');
-  var saveBtn = document.getElementById('sync-save-btn');
-  if (saveBtn) { saveBtn.textContent = '⏳ Salvando…'; saveBtn.classList.add('saving'); }
-
-  try {
-    var token = await syncGetToken();
-    if (!token) throw new Error('No token');
-    var fileId = syncFileId || await syncEnsureFile(token);
-    var bundle = syncBundleData();
-
-    var resp = await fetch(
-      "https://graph.microsoft.com/v1.0/me/drive/items/" + fileId + "/content",
-      {
-        method: 'PUT',
-        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-        body: JSON.stringify(bundle)
-      }
-    );
-    if (!resp.ok) throw new Error('Save failed: ' + resp.status);
-
-    syncLastSaved = new Date();
-    var timeStr = syncLastSaved.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
-    var name = syncAccount._displayName || syncAccount.username;
-    document.getElementById('sync-last-saved').textContent = 'Salvato alle ' + timeStr + ' da ' + name.split(' ')[0];
-    syncSetStatus('connected', 'Connesso come ' + name);
-
-    // Flash save button
-    if (saveBtn) { saveBtn.textContent = '✓ Salvato'; saveBtn.classList.remove('saving'); }
-    setTimeout(function(){if(saveBtn) saveBtn.textContent = '↑ Salva ora';}, 2000);
-
-  } catch(e) {
-    console.error('Save error:', e);
-    syncSetStatus('offline', 'Errore di salvataggio — riprova');
-    if (saveBtn) { saveBtn.textContent = '↑ Salva ora'; saveBtn.classList.remove('saving'); }
-    alert('Errore nel salvataggio su OneDrive.\n\n' + e.message);
-  }
-  syncIsSaving = false;
-}
-
-/* ── Poll for changes from other users ── */
-async function syncPoll(token) {
-  if (syncIsSaving || syncIsLoading) return;
-  try {
-    var fileId = syncFileId || await syncEnsureFile(token);
-    // Get file metadata to check last modified time
-    var metaResp = await fetch(
-      "https://graph.microsoft.com/v1.0/me/drive/items/" + fileId + "?$select=lastModifiedDateTime,lastModifiedBy",
-      { headers: { 'Authorization': 'Bearer ' + token } }
-    );
-    if (!metaResp.ok) return;
-    var meta = await metaResp.json();
-    var serverTime = new Date(meta.lastModifiedDateTime);
-    var serverUser = meta.lastModifiedBy && meta.lastModifiedBy.user ? meta.lastModifiedBy.user.displayName : '';
-    var myName = syncAccount ? (syncAccount._displayName || syncAccount.username) : '';
-
-    // Only reload if someone else saved more recently than our last save
-    if (!syncLastSaved || serverTime > syncLastSaved) {
-      // Someone else updated — reload
-      if (serverUser && serverUser !== myName) {
-        syncSetStatus('syncing', 'Aggiornamento da ' + serverUser.split(' ')[0] + '…');
-        await syncLoad(token);
-        syncLastSaved = serverTime;
-        // Show toast
-        syncToast('📥 Dati aggiornati da ' + serverUser.split(' ')[0]);
-      } else if (!syncLastSaved) {
-        await syncLoad(token);
-        syncLastSaved = serverTime;
-      }
-    }
-
-    // Update connected status with last modifier
-    syncSetStatus('connected', 'Connesso come ' + myName);
-
-  } catch(e) { console.warn('Poll error:', e); }
-}
-
-/* ── Auto-save hook — call after any significant data change ── */
+/* ── Auto-save after changes (3 second debounce) ── */
 function syncAutoSave() {
-  if (!syncAccount) return; // not logged in, skip
-  // Debounce: wait 3 seconds after last change before saving
-  if (syncAutoSave._timer) clearTimeout(syncAutoSave._timer);
-  syncAutoSave._timer = setTimeout(function(){
-    syncSave();
-  }, 3000);
-  // Flash the save button to show unsaved changes
   var btn = document.getElementById('sync-save-btn');
-  if (btn && !syncIsSaving) {
+  if (btn) {
     btn.textContent = '● Modifiche non salvate';
-    btn.style.borderColor = 'var(--amber)';
-    btn.style.color = 'var(--gold-l)';
+    btn.style.color = '#fcd34d';
   }
-}
-
-/* Reset save button styling */
-function syncResetSaveBtn() {
-  var btn = document.getElementById('sync-save-btn');
-  if (btn) { btn.textContent = '↑ Salva ora'; btn.style.borderColor = ''; btn.style.color = ''; }
+  if (syncAutoSave._timer) clearTimeout(syncAutoSave._timer);
+  syncAutoSave._timer = setTimeout(function(){ syncSave(); }, 3000);
 }
 
 /* ── Status helper ── */
 function syncSetStatus(state, text) {
   var dot = document.getElementById('sync-dot');
   var txt = document.getElementById('sync-status-text');
-  if (dot) { dot.className = 'sync-dot ' + state; }
+  if (dot) dot.className = 'sync-dot ' + state;
   if (txt) txt.textContent = text;
 }
 
 /* ── Toast notification ── */
 function syncToast(msg) {
-  var toast = document.createElement('div');
-  toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-size:12px;font-family:var(--fb);z-index:9998;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:opacity .4s';
-  toast.textContent = msg;
-  document.body.appendChild(toast);
-  setTimeout(function(){ toast.style.opacity='0'; setTimeout(function(){toast.remove();},400); }, 3000);
+  var t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#1c1b18;color:#fff;padding:10px 16px;border-radius:8px;font-size:12px;z-index:9998;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:opacity .4s';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){t.remove();},400); }, 3000);
 }
 
-/* ── Hook into existing save functions to trigger auto-save ── */
-/* Wrap tsSaveAll */
+/* ── Wrap save functions to trigger auto-save ── */
 var _origTsSaveAll = tsSaveAll;
-tsSaveAll = function(){
-  _origTsSaveAll.call(this);
-  syncAutoSave();
-};
-/* Wrap l10Save */
-var _origL10Save = l10Save;
-l10Save = function(){
-  _origL10Save.call(this);
-  syncAutoSave();
-};
-/* Wrap fcSave */
-var _origFcSave = fcSave;
-fcSave = function(){
-  _origFcSave.call(this);
-  syncAutoSave();
-};
-/* Wrap project creation */
-var _origRenderProjList = renderProjList;
-renderProjList = function(){
-  _origRenderProjList.call(this);
-  // Don't auto-save on every render, only on explicit project changes
-};
+tsSaveAll = function(){ _origTsSaveAll.call(this); syncAutoSave(); };
 
-/* ── Keyboard shortcut: Ctrl+S saves ── */
+var _origL10Save = l10Save;
+l10Save = function(){ _origL10Save.call(this); syncAutoSave(); };
+
+var _origFcSave = fcSave;
+fcSave = function(){ _origFcSave.call(this); syncAutoSave(); };
+
+/* ── Ctrl+S to save ── */
 document.addEventListener('keydown', function(e){
-  if ((e.ctrlKey||e.metaKey) && e.key==='s') {
-    e.preventDefault();
-    syncSave();
-  }
+  if ((e.ctrlKey||e.metaKey) && e.key==='s') { e.preventDefault(); syncSave(); }
 });
 
-/* ── Handle MSAL redirect on page load ── */
+/* ── Init on page load ── */
 window.addEventListener('load', function(){
-  if (!syncInitMsal()) return;
-  // Handle redirect response (not usually needed for popup but good practice)
-  syncMsal.handleRedirectPromise().catch(function(){});
-  // Check if already logged in
-  setTimeout(function(){
-    var accounts = syncMsal.getAllAccounts ? syncMsal.getAllAccounts() : [];
-    if (accounts.length > 0) {
-      syncAccount = accounts[0];
-      // Try to get display name from cache
-      syncAccount._displayName = syncAccount.name || syncAccount.username;
-      syncAccount._initials = (syncAccount._displayName||'?').split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+  // Check SharePoint connection and load data
+  setTimeout(async function(){
+    syncSetStatus('syncing', 'Connessione a SharePoint...');
+
+    // Get current user
+    syncCurrentUser = await spGetUser();
+    if (syncCurrentUser) {
+      syncSetStatus('syncing', 'Connesso come ' + syncCurrentUser.name + ' — caricamento dati...');
       document.getElementById('sync-login-btn').style.display = 'none';
-      document.getElementById('sync-logout-btn').style.display = 'block';
       document.getElementById('sync-save-btn').style.display = 'block';
-      syncSetStatus('syncing', 'Riconnessione…');
-      syncGetToken().then(function(token){
-        if (token) {
-          syncLoad(token).then(function(){
-            if (syncPollTimer) clearInterval(syncPollTimer);
-            syncPollTimer = setInterval(async function(){
-              var t = await syncGetToken();
-              if (t) await syncPoll(t);
-            }, 30000);
-          });
-        }
-      });
+
+      // Load data
+      await spLoad();
+
+      // Start polling every 30 seconds
+      if (syncPollTimer) clearInterval(syncPollTimer);
+      syncPollTimer = setInterval(syncPoll, 30000);
+
+    } else {
+      syncSetStatus('offline', 'Non connesso a SharePoint — apri il Hub da Microsoft 365');
+      document.getElementById('sync-login-btn').style.display = 'block';
+      document.getElementById('sync-save-btn').style.display = 'none';
     }
-  }, 500);
+  }, 800);
 });
 
 </script>
