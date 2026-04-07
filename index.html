@@ -3296,31 +3296,43 @@ async function jbLoad() {
   syncIsLoading = true;
   syncSetStatus('syncing', 'Caricamento dati...');
   try {
-    var binId = await jbGetBinId();
-    if (!binId) {
-      syncSetStatus('connected', 'Connesso — primo avvio');
-      syncIsLoading = false;
-      return false;
-    }
-    var resp = await fetch(JB_BASE + '/b/' + binId + '/latest', {
+    var resp = await fetch(JB_BASE + '/b/' + JB_BIN_ID + '/latest', {
       headers: { 'X-Master-Key': JB_KEY }
     });
     if (!resp.ok) throw new Error('Load failed: ' + resp.status);
     var data = await resp.json();
     var bundle = data.record;
-    syncApplyData(bundle);
-    if (bundle.savedAt) {
+
+    // Only apply remote data if it has MORE projects than what we already have
+    // This prevents an empty/stale JSONBin from wiping the embedded Harvest data
+    var remoteProjects = (bundle && bundle.data && bundle.data.projects) ? bundle.data.projects : [];
+    var localProjects  = typeof projects !== 'undefined' ? projects : [];
+
+    if (remoteProjects.length >= localProjects.length && bundle.savedBy !== 'Harvest Import') {
+      syncApplyData(bundle);
+    } else if (remoteProjects.length === 0 && localProjects.length > 0) {
+      // Remote is empty — push local data up to JSONBin
+      syncSetStatus('syncing', 'Primo avvio — caricamento dati Harvest...');
+      syncIsLoading = false;
+      await syncSave();
+      return true;
+    } else if (bundle && bundle.savedBy === 'Harvest Import') {
+      // Remote has only the initial import — apply it
+      syncApplyData(bundle);
+    }
+
+    if (bundle && bundle.savedAt) {
       var dt = new Date(bundle.savedAt);
       var by = bundle.savedBy ? ' da ' + bundle.savedBy.split(' ')[0] : '';
-      document.getElementById('sync-last-saved').textContent =
-        'Ultimo salvataggio: ' + dt.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'}) + by;
+      var el = document.getElementById('sync-last-saved');
+      if (el) el.textContent = 'Ultimo salvataggio: ' + dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) + by;
     }
     syncSetStatus('connected', 'Connesso' + (syncCurrentUser ? ' come ' + syncCurrentUser : ''));
     syncIsLoading = false;
     return true;
   } catch(e) {
     console.error('Load error:', e);
-    syncSetStatus('offline', 'Errore caricamento: ' + e.message);
+    syncSetStatus('connected', 'Dati locali — salva per sincronizzare');
     syncIsLoading = false;
     return false;
   }
@@ -3495,6 +3507,11 @@ document.addEventListener('keydown', function(e){
 
 /* ── Init on load ── */
 window.addEventListener('load', function(){
+  // Render immediately with embedded data — don't wait for sync
+  if(typeof renderProjList==='function'){ renderProjList(); renderWorkload(); }
+  if(typeof l10Render==='function') l10Render();
+  if(typeof fcRenderKPIs==='function') fcRenderKPIs();
+
   setTimeout(async function(){
     // Show save button, hide login
     document.getElementById('sync-login-btn').style.display = 'none';
@@ -3503,13 +3520,8 @@ window.addEventListener('load', function(){
     // Pick user
     syncPickUser();
 
-    // Load data from JSONBin
-    var binId = await jbGetBinId();
-    if (binId) {
-      await jbLoad();
-    } else {
-      syncSetStatus('connected', 'Pronto — clicca Salva per creare il database condiviso');
-    }
+    // Load from JSONBin (won't overwrite if local has more data)
+    await jbLoad();
 
     // Start polling every 30s
     if (syncPollTimer) clearInterval(syncPollTimer);
