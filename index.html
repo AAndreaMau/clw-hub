@@ -3257,7 +3257,7 @@ showTab = function(id,btn){
 ═══════════════════════════════════════ */
 
 var JB_KEY    = '$2a$10$SxPDVyymDbXiryBWCc6ygeZs5fovlUCmiKTeEAizPGNcSCDMRbDw6';
-var JB_BIN_ID = null; // set after first save, stored in localStorage
+var JB_BIN_ID = '69d4d6d8856a682189092345'; // CLW shared database
 var JB_BASE   = 'https://api.jsonbin.io/v3';
 
 var syncPollTimer   = null;
@@ -3268,11 +3268,9 @@ var syncCurrentUser = null;
 
 /* ── Get or create the bin ID ── */
 async function jbGetBinId() {
-  // Check localStorage first
-  var stored = localStorage.getItem('clw-hub-bin-id');
-  if (stored) { JB_BIN_ID = stored; return stored; }
-  if (JB_BIN_ID) return JB_BIN_ID;
-  return null;
+  // Always use the shared CLW database
+  localStorage.setItem('clw-hub-bin-id', JB_BIN_ID);
+  return JB_BIN_ID;
 }
 
 async function jbCreateBin(bundle) {
@@ -3373,22 +3371,27 @@ async function syncSave() {
 async function syncPoll() {
   if (syncIsSaving || syncIsLoading) return;
   try {
-    var binId = await jbGetBinId();
-    if (!binId) return;
-    // Get bin metadata to check version
-    var resp = await fetch(JB_BASE + '/b/' + binId + '/meta', {
+    var resp = await fetch(JB_BASE + '/b/' + JB_BIN_ID + '/latest', {
       headers: { 'X-Master-Key': JB_KEY }
     });
     if (!resp.ok) return;
-    var meta = await resp.json();
-    var version = meta.metadata ? meta.metadata.version : 0;
-    // Compare with our stored version
-    var lastVersion = parseInt(localStorage.getItem('clw-hub-version') || '0');
-    if (version > lastVersion) {
-      // Someone else saved — reload
-      localStorage.setItem('clw-hub-version', version);
-      await jbLoad();
-      syncToast('📥 Dati aggiornati');
+    var data = await resp.json();
+    var bundle = data.record;
+    // Check if someone else saved more recently
+    if (bundle && bundle.savedAt) {
+      var serverTime = new Date(bundle.savedAt);
+      var serverUser = bundle.savedBy || '';
+      var myName = syncCurrentUser || '';
+      if (!syncLastSaved || serverTime > new Date(syncLastSaved.getTime() + 5000)) {
+        if (serverUser !== myName) {
+          syncApplyData(bundle);
+          syncLastSaved = serverTime;
+          syncToast('📥 Dati aggiornati da ' + serverUser.split(' ')[0]);
+          var by = serverUser ? ' da ' + serverUser.split(' ')[0] : '';
+          document.getElementById('sync-last-saved').textContent =
+            'Aggiornato alle ' + serverTime.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) + by;
+        }
+      }
     }
   } catch(e) { /* silent */ }
 }
