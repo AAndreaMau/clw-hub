@@ -512,7 +512,7 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
   <div style="display:flex;align-items:center;gap:8px">
     <span class="sync-time" id="sync-last-saved"></span>
     <button class="sync-btn" id="sync-save-btn" onclick="syncSave()" style="display:none">&#x2191; Salva ora</button>
-    <button class="sync-btn login" id="sync-login-btn" onclick="window.open('https://clw736.sharepoint.com','_blank')" style="display:none">&#x1F464; Apri SharePoint</button>
+    <button class="sync-btn login" id="sync-login-btn" style="display:none">&#x1F464; Apri SharePoint</button>
     <button class="sync-btn" id="sync-logout-btn" onclick="syncLogout()" style="display:none">Esci</button>
   </div>
 </div>
@@ -3251,16 +3251,14 @@ showTab = function(id,btn){
 /* Projects can set p.dateWon when created — expose a setter */
 
 /* ═══════════════════════════════════════
-   SHAREPOINT SYNC MODULE
-   CLW Hub — SharePoint REST API
-   No Azure AD required — uses existing
-   Microsoft 365 browser session
+   JSONBIN SYNC MODULE
+   CLW Hub — Shared cloud storage
+   jsonbin.io — private, free tier
 ═══════════════════════════════════════ */
 
-var SP_SITE    = 'https://clw736.sharepoint.com/sites/CLW.CONSULTING';
-var SP_FOLDER  = 'CLW Hub';
-var SP_FILE    = 'clw-hub-data.json';
-var SP_API     = SP_SITE + "/_api/web/GetFolderByServerRelativeUrl('CLW Hub')";
+var JB_KEY    = '$2a$10$SxPDVyymDbXiryBWCc6ygeZs5fovlUCmiKTeEAizPGNcSCDMRbDw6';
+var JB_BIN_ID = null; // set after first save, stored in localStorage
+var JB_BASE   = 'https://api.jsonbin.io/v3';
 
 var syncPollTimer   = null;
 var syncLastSaved   = null;
@@ -3268,157 +3266,105 @@ var syncIsSaving    = false;
 var syncIsLoading   = false;
 var syncCurrentUser = null;
 
-/* ── Get SharePoint Request Digest (required for write operations) ── */
-async function spGetDigest() {
-  try {
-    var resp = await fetch(SP_SITE + '/_api/contextinfo', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json;odata=verbose',
-        'Content-Type': 'application/json;odata=verbose'
-      },
-      credentials: 'include'
-    });
-    if (!resp.ok) throw new Error('Digest failed: ' + resp.status);
-    var data = await resp.json();
-    return data.d.GetContextWebInformation.FormDigestValue;
-  } catch(e) {
-    console.error('Digest error:', e);
-    return null;
-  }
+/* ── Get or create the bin ID ── */
+async function jbGetBinId() {
+  // Check localStorage first
+  var stored = localStorage.getItem('clw-hub-bin-id');
+  if (stored) { JB_BIN_ID = stored; return stored; }
+  if (JB_BIN_ID) return JB_BIN_ID;
+  return null;
 }
 
-/* ── Get current user ── */
-async function spGetUser() {
-  try {
-    var resp = await fetch(SP_SITE + '/_api/web/currentuser?$select=Title,Email', {
-      headers: { 'Accept': 'application/json;odata=verbose' },
-      credentials: 'include'
-    });
-    if (!resp.ok) return null;
-    var data = await resp.json();
-    return {
-      name: data.d.Title,
-      email: data.d.Email,
-      initials: data.d.Title.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase()
-    };
-  } catch(e) { return null; }
+async function jbCreateBin(bundle) {
+  var resp = await fetch(JB_BASE + '/b', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Master-Key': JB_KEY,
+      'X-Bin-Name': 'CLW Hub Data',
+      'X-Bin-Private': 'true'
+    },
+    body: JSON.stringify(bundle)
+  });
+  if (!resp.ok) throw new Error('Create bin failed: ' + resp.status);
+  var data = await resp.json();
+  JB_BIN_ID = data.metadata.id;
+  localStorage.setItem('clw-hub-bin-id', JB_BIN_ID);
+  return JB_BIN_ID;
 }
 
-/* ── Ensure CLW Hub folder exists ── */
-async function spEnsureFolder(digest) {
-  try {
-    // Check if folder exists
-    var check = await fetch(
-      SP_SITE + "/_api/web/GetFolderByServerRelativeUrl('/" + SP_FOLDER + "')",
-      { headers: { 'Accept': 'application/json;odata=verbose' }, credentials: 'include' }
-    );
-    if (check.ok) return true;
-
-    // Create folder
-    await fetch(SP_SITE + "/_api/web/folders", {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json;odata=verbose',
-        'Content-Type': 'application/json;odata=verbose',
-        'X-RequestDigest': digest
-      },
-      credentials: 'include',
-      body: JSON.stringify({ '__metadata': { 'type': 'SP.Folder' }, 'ServerRelativeUrl': '/' + SP_FOLDER })
-    });
-    return true;
-  } catch(e) { return false; }
-}
-
-/* ── Load data from SharePoint ── */
-async function spLoad() {
+/* ── Load data from JSONBin ── */
+async function jbLoad() {
   syncIsLoading = true;
   syncSetStatus('syncing', 'Caricamento dati...');
   try {
-    var fileUrl = SP_SITE + "/_api/web/GetFileByServerRelativeUrl('/" + SP_FOLDER + "/" + SP_FILE + "')/$value";
-    var resp = await fetch(fileUrl, {
-      headers: { 'Accept': 'application/json' },
-      credentials: 'include'
-    });
-
-    if (resp.status === 404) {
-      // File doesn't exist yet — this is first run
-      syncSetStatus('connected', 'Connesso — primo avvio, nessun dato precedente');
+    var binId = await jbGetBinId();
+    if (!binId) {
+      syncSetStatus('connected', 'Connesso — primo avvio');
       syncIsLoading = false;
-      return;
+      return false;
     }
+    var resp = await fetch(JB_BASE + '/b/' + binId + '/latest', {
+      headers: { 'X-Master-Key': JB_KEY }
+    });
     if (!resp.ok) throw new Error('Load failed: ' + resp.status);
-
-    var bundle = await resp.json();
+    var data = await resp.json();
+    var bundle = data.record;
     syncApplyData(bundle);
-
     if (bundle.savedAt) {
       var dt = new Date(bundle.savedAt);
       var by = bundle.savedBy ? ' da ' + bundle.savedBy.split(' ')[0] : '';
       document.getElementById('sync-last-saved').textContent =
-        'Ultimo salvataggio: ' + dt.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) + by;
+        'Ultimo salvataggio: ' + dt.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'}) + by;
     }
-    syncSetStatus('connected', 'Connesso' + (syncCurrentUser ? ' come ' + syncCurrentUser.name : ''));
+    syncSetStatus('connected', 'Connesso' + (syncCurrentUser ? ' come ' + syncCurrentUser : ''));
     syncIsLoading = false;
     return true;
   } catch(e) {
     console.error('Load error:', e);
-    syncSetStatus('offline', 'Errore caricamento — sei connesso a SharePoint?');
+    syncSetStatus('offline', 'Errore caricamento: ' + e.message);
     syncIsLoading = false;
     return false;
   }
 }
 
-/* ── Save data to SharePoint ── */
+/* ── Save data to JSONBin ── */
 async function syncSave() {
   if (syncIsSaving) return;
   syncIsSaving = true;
-
   var saveBtn = document.getElementById('sync-save-btn');
   if (saveBtn) { saveBtn.textContent = '⏳ Salvando...'; saveBtn.disabled = true; }
   syncSetStatus('syncing', 'Salvataggio in corso...');
-
   try {
-    var digest = await spGetDigest();
-    if (!digest) throw new Error('Impossibile ottenere il token SharePoint. Sei connesso a Microsoft 365?');
-
-    await spEnsureFolder(digest);
-
     var bundle = syncBundleData();
-    var json = JSON.stringify(bundle);
-
-    // Upload file (creates or overwrites)
-    var uploadUrl = SP_SITE + "/_api/web/GetFolderByServerRelativeUrl('/" + SP_FOLDER + "')/Files/add(url='" + SP_FILE + "',overwrite=true)";
-    var resp = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json;odata=verbose',
-        'X-RequestDigest': digest,
-        'Content-Type': 'application/json;odata=verbose'
-      },
-      credentials: 'include',
-      body: json
-    });
-
-    if (!resp.ok) {
-      var errText = await resp.text();
-      throw new Error('Save failed ' + resp.status + ': ' + errText.slice(0, 200));
+    var binId = await jbGetBinId();
+    if (!binId) {
+      // First save — create the bin
+      await jbCreateBin(bundle);
+    } else {
+      // Update existing bin
+      var resp = await fetch(JB_BASE + '/b/' + binId, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': JB_KEY
+        },
+        body: JSON.stringify(bundle)
+      });
+      if (!resp.ok) throw new Error('Save failed: ' + resp.status);
     }
-
     syncLastSaved = new Date();
-    var timeStr = syncLastSaved.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
-    var name = syncCurrentUser ? syncCurrentUser.name.split(' ')[0] : 'tu';
+    var timeStr = syncLastSaved.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
+    var name = syncCurrentUser || 'tu';
     document.getElementById('sync-last-saved').textContent = 'Salvato alle ' + timeStr + ' da ' + name;
-    syncSetStatus('connected', 'Connesso' + (syncCurrentUser ? ' come ' + syncCurrentUser.name : ''));
-
+    syncSetStatus('connected', 'Connesso' + (syncCurrentUser ? ' come ' + syncCurrentUser : ''));
     if (saveBtn) { saveBtn.textContent = '✓ Salvato'; saveBtn.disabled = false; }
-    setTimeout(function(){ if(saveBtn) saveBtn.textContent = '↑ Salva ora'; }, 2000);
-
+    setTimeout(function(){ if(saveBtn){ saveBtn.textContent = '↑ Salva ora'; saveBtn.style.color=''; saveBtn.style.borderColor=''; }}, 2000);
   } catch(e) {
     console.error('Save error:', e);
-    syncSetStatus('offline', 'Errore salvataggio');
+    syncSetStatus('offline', 'Errore salvataggio: ' + e.message);
     if (saveBtn) { saveBtn.textContent = '↑ Salva ora'; saveBtn.disabled = false; }
-    alert('Errore nel salvataggio su SharePoint:\n\n' + e.message + '\n\nAssicurati di essere connesso a Microsoft 365 nello stesso browser.');
+    alert('Errore nel salvataggio:\n\n' + e.message);
   }
   syncIsSaving = false;
 }
@@ -3427,29 +3373,43 @@ async function syncSave() {
 async function syncPoll() {
   if (syncIsSaving || syncIsLoading) return;
   try {
-    // Get file metadata to check last modified
-    var metaUrl = SP_SITE + "/_api/web/GetFileByServerRelativeUrl('/" + SP_FOLDER + "/" + SP_FILE + "')?$select=TimeLastModified,ModifiedBy/Title&$expand=ModifiedBy";
-    var resp = await fetch(metaUrl, {
-      headers: { 'Accept': 'application/json;odata=verbose' },
-      credentials: 'include'
+    var binId = await jbGetBinId();
+    if (!binId) return;
+    // Get bin metadata to check version
+    var resp = await fetch(JB_BASE + '/b/' + binId + '/meta', {
+      headers: { 'X-Master-Key': JB_KEY }
     });
     if (!resp.ok) return;
-    var data = await resp.json();
-    var serverTime = new Date(data.d.TimeLastModified);
-    var modifiedBy = data.d.ModifiedBy ? data.d.ModifiedBy.Title : '';
-    var myName = syncCurrentUser ? syncCurrentUser.name : '';
-
-    // If someone else saved more recently than our last save
-    if (!syncLastSaved || serverTime > new Date(syncLastSaved.getTime() + 5000)) {
-      if (modifiedBy !== myName) {
-        // Another user saved — reload
-        syncSetStatus('syncing', 'Aggiornamento da ' + modifiedBy.split(' ')[0] + '...');
-        await spLoad();
-        syncLastSaved = serverTime;
-        syncToast('📥 Dati aggiornati da ' + modifiedBy.split(' ')[0]);
-      }
+    var meta = await resp.json();
+    var version = meta.metadata ? meta.metadata.version : 0;
+    // Compare with our stored version
+    var lastVersion = parseInt(localStorage.getItem('clw-hub-version') || '0');
+    if (version > lastVersion) {
+      // Someone else saved — reload
+      localStorage.setItem('clw-hub-version', version);
+      await jbLoad();
+      syncToast('📥 Dati aggiornati');
     }
-  } catch(e) { /* silent fail on poll */ }
+  } catch(e) { /* silent */ }
+}
+
+/* ── Name picker for this user ── */
+function syncPickUser() {
+  var saved = localStorage.getItem('clw-hub-user');
+  if (saved) { syncCurrentUser = saved; return; }
+  var names = ['Andrea','Ben','Johnny','Adam','AL'];
+  var html = '<div class="form-row full"><div class="form-group"><label class="form-label">Chi sei?</label>'
+    +'<select class="form-input" id="m-username">'
+    + names.map(function(n){return '<option>'+n+'</option>';}).join('')
+    +'</select></div></div>';
+  showModal('Benvenuto nel CLW Hub', html, function(){
+    var sel = document.getElementById('m-username');
+    syncCurrentUser = sel ? sel.value : 'Team';
+    localStorage.setItem('clw-hub-user', syncCurrentUser);
+    document.getElementById('sync-status-text').textContent = 'Connesso come ' + syncCurrentUser;
+    syncSetStatus('connected', 'Connesso come ' + syncCurrentUser);
+    return true;
+  }, 'Entra');
 }
 
 /* ── Bundle all app data ── */
@@ -3457,7 +3417,7 @@ function syncBundleData() {
   return {
     version: 3,
     savedAt: new Date().toISOString(),
-    savedBy: syncCurrentUser ? syncCurrentUser.name : 'unknown',
+    savedBy: syncCurrentUser || 'unknown',
     data: {
       projects:         typeof projects         !== 'undefined' ? projects         : [],
       timesheetEntries: typeof timesheetEntries !== 'undefined' ? timesheetEntries : [],
@@ -3470,7 +3430,7 @@ function syncBundleData() {
   };
 }
 
-/* ── Apply loaded data to app ── */
+/* ── Apply loaded data ── */
 function syncApplyData(bundle) {
   if (!bundle || !bundle.data) return;
   var d = bundle.data;
@@ -3481,7 +3441,6 @@ function syncApplyData(bundle) {
   if (d.fcWon            !== undefined)   fcWon            = d.fcWon;
   if (d.fcForecast       !== undefined)   fcForecast       = d.fcForecast;
   if (d.roiRows          !== undefined)   roiRows          = d.roiRows;
-
   // Re-render active tab
   var activeTab = document.querySelector('.content.active');
   if (activeTab) {
@@ -3493,13 +3452,10 @@ function syncApplyData(bundle) {
   }
 }
 
-/* ── Auto-save after changes (3 second debounce) ── */
+/* ── Auto-save after changes (3s debounce) ── */
 function syncAutoSave() {
   var btn = document.getElementById('sync-save-btn');
-  if (btn) {
-    btn.textContent = '● Modifiche non salvate';
-    btn.style.color = '#fcd34d';
-  }
+  if (btn) { btn.textContent = '● Non salvato'; btn.style.color='#fcd34d'; btn.style.borderColor='#fcd34d'; }
   if (syncAutoSave._timer) clearTimeout(syncAutoSave._timer);
   syncAutoSave._timer = setTimeout(function(){ syncSave(); }, 3000);
 }
@@ -3512,7 +3468,7 @@ function syncSetStatus(state, text) {
   if (txt) txt.textContent = text;
 }
 
-/* ── Toast notification ── */
+/* ── Toast ── */
 function syncToast(msg) {
   var t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#1c1b18;color:#fff;padding:10px 16px;border-radius:8px;font-size:12px;z-index:9998;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:opacity .4s';
@@ -3521,47 +3477,42 @@ function syncToast(msg) {
   setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){t.remove();},400); }, 3000);
 }
 
-/* ── Wrap save functions to trigger auto-save ── */
+/* ── Wrap save functions ── */
 var _origTsSaveAll = tsSaveAll;
 tsSaveAll = function(){ _origTsSaveAll.call(this); syncAutoSave(); };
-
 var _origL10Save = l10Save;
 l10Save = function(){ _origL10Save.call(this); syncAutoSave(); };
-
 var _origFcSave = fcSave;
 fcSave = function(){ _origFcSave.call(this); syncAutoSave(); };
 
-/* ── Ctrl+S to save ── */
+/* ── Ctrl+S ── */
 document.addEventListener('keydown', function(e){
   if ((e.ctrlKey||e.metaKey) && e.key==='s') { e.preventDefault(); syncSave(); }
 });
 
-/* ── Init on page load ── */
+/* ── Init on load ── */
 window.addEventListener('load', function(){
-  // Check SharePoint connection and load data
   setTimeout(async function(){
-    syncSetStatus('syncing', 'Connessione a SharePoint...');
+    // Show save button, hide login
+    document.getElementById('sync-login-btn').style.display = 'none';
+    document.getElementById('sync-save-btn').style.display = 'block';
 
-    // Get current user
-    syncCurrentUser = await spGetUser();
-    if (syncCurrentUser) {
-      syncSetStatus('syncing', 'Connesso come ' + syncCurrentUser.name + ' — caricamento dati...');
-      document.getElementById('sync-login-btn').style.display = 'none';
-      document.getElementById('sync-save-btn').style.display = 'block';
+    // Pick user
+    syncPickUser();
 
-      // Load data
-      await spLoad();
-
-      // Start polling every 30 seconds
-      if (syncPollTimer) clearInterval(syncPollTimer);
-      syncPollTimer = setInterval(syncPoll, 30000);
-
+    // Load data from JSONBin
+    var binId = await jbGetBinId();
+    if (binId) {
+      await jbLoad();
     } else {
-      syncSetStatus('offline', 'Non connesso a SharePoint — apri il Hub da Microsoft 365');
-      document.getElementById('sync-login-btn').style.display = 'block';
-      document.getElementById('sync-save-btn').style.display = 'none';
+      syncSetStatus('connected', 'Pronto — clicca Salva per creare il database condiviso');
     }
-  }, 800);
+
+    // Start polling every 30s
+    if (syncPollTimer) clearInterval(syncPollTimer);
+    syncPollTimer = setInterval(syncPoll, 30000);
+
+  }, 600);
 });
 
 </script>
