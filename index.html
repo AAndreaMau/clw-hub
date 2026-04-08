@@ -2405,19 +2405,50 @@ function l10NavWeek(dir) { l10WeekOffset += dir; l10Render(); }
 function l10GetData() {
   var wk = l10WeekKey(l10WeekOffset);
   if (!l10Data[wk]) {
-    // Try to carry forward open actions from previous week
     var prevWk = l10WeekKey(l10WeekOffset-1);
-    var prevActions = l10Data[prevWk] ? l10Data[prevWk].actions.filter(function(a){return !a.done;}).map(function(a){return Object.assign({},a);}) : [];
+    var prev = l10Data[prevWk];
+
+    // Carry forward open actions from previous week
+    var prevActions = prev ? prev.actions.filter(function(a){return !a.done;}).map(function(a){return Object.assign({},a);}) : [];
+
+    // Carry forward live jobs from previous week
+    // We track which projects were explicitly removed (stored in l10RemovedJobs)
+    var prevLiveJobs = [];
+    if (prev && prev.liveJobs && prev.liveJobs.length) {
+      var removedIds = (prev.removedJobIds || []);
+      prevLiveJobs = prev.liveJobs
+        .filter(function(j){ return removedIds.indexOf(j.projId||j.name) === -1; })
+        .map(function(j){
+          return {
+            projId: j.projId||'',
+            name: j.name||'',
+            feedback: j.feedback||'Not requested',
+            owner: j.owner||'',
+            update: '' // clear update each week — fresh notes
+          };
+        });
+    }
+
+    // Carry forward prospective jobs
+    var prevProsJobs = prev && prev.prosJobs ? prev.prosJobs.map(function(j){return Object.assign({},j);}) : [];
+
+    // Carry forward KPIs and months
+    var prevKpis  = prev && prev.kpis   ? Object.assign({},prev.kpis)  : {q1target:0,q1won:0,q1left:0,q1avg:0,q2target:0,q2won:0,q2avg:0};
+    var prevMonths = prev && prev.months ? prev.months.map(function(m){return Object.assign({},m);}) : [];
+
     l10Data[wk] = {
-      checkins: {BH:'',AM:'',JE:'',AD:'',AL:''},
-      liveJobs: [],
-      prosJobs: [],
-      kpis: {q1target:0,q1won:0,q1left:0,q1avg:0,q2target:0,q2won:0,q2avg:0},
-      months: [],
-      issues: [],
-      actions: prevActions
+      checkins:      {BH:'',AM:'',JE:'',AD:'',AL:''},
+      liveJobs:      prevLiveJobs,
+      prosJobs:      prevProsJobs,
+      removedJobIds: [],
+      kpis:          prevKpis,
+      months:        prevMonths,
+      issues:        [],
+      actions:       prevActions
     };
   }
+  // Ensure removedJobIds always exists
+  if (!l10Data[wk].removedJobIds) l10Data[wk].removedJobIds = [];
   return l10Data[wk];
 }
 
@@ -2569,7 +2600,19 @@ function l10SetLive(i,field,val){
     if(snap&&!d.liveJobs[i].owner) d.liveJobs[i].owner='';
   }
 }
-function l10DelLive(i){ l10GetData().liveJobs.splice(i,1); l10RenderLive(); }
+function l10DelLive(i){
+  var d = l10GetData();
+  var removed = d.liveJobs[i];
+  // Record the removed project ID so it doesn't carry forward next week
+  if (removed) {
+    var key = removed.projId || removed.name;
+    if (key && d.removedJobIds.indexOf(key) === -1) {
+      d.removedJobIds.push(key);
+    }
+  }
+  d.liveJobs.splice(i,1);
+  l10RenderLive();
+}
 
 /* ── 2b. PROSPECTIVE JOBS ── */
 function l10RenderPros() {
