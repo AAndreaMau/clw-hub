@@ -1100,6 +1100,7 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
               <tr>
                 <th style="min-width:180px">Project</th>
                 <th style="min-width:160px">Stage &amp; Financials</th>
+                <th style="min-width:90px">Status</th>
                 <th style="min-width:110px">Feedback</th>
                 <th style="min-width:80px">Owner</th>
                 <th style="min-width:220px">Update / Actions</th>
@@ -2552,33 +2553,52 @@ function l10RenderLive() {
         + '<div style="font-size:9px;color:var(--ink3);margin-top:2px">'+pct+'% of '+snap.totalBudget+'h budget used &middot; Total fee: '+l10FmtMoney(snap.totalFee)+'</div>'
       : '<div style="font-size:11px;color:var(--ink3)">Select project above to see financials</div>';
 
+    // Status colours
+    var proj = row.projId ? getProjectById(row.projId) : null;
+    var projStatus = proj ? proj.status : (row.projStatus || 'Active');
+    var statusCol = {
+      'Active':  {bg:'var(--teal-l)',  color:'var(--teal)'},
+      'On Hold': {bg:'var(--amber-l)', color:'var(--amber)'},
+      'Complete':{bg:'var(--blue-l)',  color:'var(--blue)'},
+      'Pending': {bg:'var(--bg3)',     color:'var(--ink3)'}
+    }[projStatus] || {bg:'var(--bg3)',color:'var(--ink3)'};
+
     return '<tr>'
       // 1. Project selector
       + '<td style="min-width:160px;vertical-align:top;padding:8px 10px">' + projCell + '</td>'
       // 2. Stage + fee snapshot
       + '<td style="min-width:200px;vertical-align:top;padding:8px 10px;background:var(--bg)">' + snapCell + '</td>'
-      // 3. Feedback
-      + '<td style="min-width:120px;vertical-align:top;padding:8px 10px">'
+      // 3. Status — syncs to Projects tab
+      + '<td style="min-width:90px;vertical-align:top;padding:8px 10px">'
+          + '<select style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:10px;font-weight:700;font-family:var(--fb);background:'+statusCol.bg+';color:'+statusCol.color+';cursor:pointer" '
+            + 'onchange="l10SetLiveStatus('+i+',this.value)">'
+            + ['Active','On Hold','Complete','Pending'].map(function(s){
+                return '<option'+(s===projStatus?' selected':'')+'>'+s+'</option>';
+              }).join('')
+          + '</select>'
+        + '</td>'
+      // 4. Feedback
+      + '<td style="min-width:110px;vertical-align:top;padding:8px 10px">'
           + '<select style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:10px;font-weight:700;font-family:var(--fb);background:'+fbc.bg+';color:'+fbc.color+';cursor:pointer" '
-            + 'onchange="l10SetLive('+i+',\'feedback\',this.value);l10RenderLive()">'
+            + 'onchange="l10SetLive('+i+',' + "'feedback'" + ',this.value);l10RenderLive()">'
             + L10_FEEDBACK.map(function(o){return '<option'+(o===fb?' selected':'')+'>'+o+'</option>';}).join('')
           + '</select>'
         + '</td>'
-      // 4. Owner
-      + '<td style="min-width:90px;vertical-align:top;padding:8px 10px">'
+      // 5. Owner
+      + '<td style="min-width:80px;vertical-align:top;padding:8px 10px">'
           + '<select style="width:100%;padding:4px 5px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--fb);background:var(--white);cursor:pointer" '
-            + 'onchange="l10SetLive('+i+',\'owner\',this.value)">'
+            + 'onchange="l10SetLive('+i+',' + "'owner'" + ',this.value)">'
             + '<option value="">—</option>'
             + L10_OWNERS.map(function(o){return '<option'+(o===row.owner?' selected':'')+'>'+o+'</option>';}).join('')
           + '</select>'
         + '</td>'
-      // 5. Update / Actions
+      // 6. Update / Actions
       + '<td style="min-width:240px;vertical-align:top;padding:8px 10px">'
           + '<textarea style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--fb);background:var(--white);resize:vertical;min-height:60px;line-height:1.5;color:var(--ink2)" '
             + 'placeholder="Update \u2022 Actions\u2026" '
-            + 'onchange="l10SetLive('+i+',\'update\',this.value)">'+escH(row.update||'')+'</textarea>'
+            + 'onchange="l10SetLive('+i+',' + "'update'" + ',this.value)">'+escH(row.update||'')+'</textarea>'
         + '</td>'
-      // 6. Delete
+      // 7. Delete
       + '<td style="vertical-align:top;padding:8px 6px">'
           + '<button class="l10-del-btn" onclick="l10DelLive('+i+')" title="Remove">\u00D7</button>'
         + '</td>'
@@ -2594,11 +2614,23 @@ function l10SetLive(i,field,val){
   var d=l10GetData();
   if(!d.liveJobs[i]) return;
   d.liveJobs[i][field]=val;
-  // When a project is selected, auto-set owner from project team lead
-  if(field==='projId'&&val){
-    var snap=l10ProjSnapshot(val);
-    if(snap&&!d.liveJobs[i].owner) d.liveJobs[i].owner='';
+}
+
+// Set project status from L10 — syncs to Projects tab immediately
+function l10SetLiveStatus(i, status){
+  var d = l10GetData();
+  if(!d.liveJobs[i]) return;
+  d.liveJobs[i].projStatus = status;
+  // Sync to Projects tab
+  if(d.liveJobs[i].projId){
+    var proj = getProjectById(d.liveJobs[i].projId);
+    if(proj){
+      proj.status = status;
+      renderProjList(); // refresh sidebar
+    }
   }
+  l10RenderLive(); // re-render to update badge colour
+  syncAutoSave();
 }
 function l10DelLive(i){
   var d = l10GetData();
@@ -2820,6 +2852,9 @@ function l10Export(){
   var liveHtml = d.liveJobs.map(function(r){
     var snap = r.projId ? l10ProjSnapshot(r.projId) : null;
     var projName = snap ? snap.name : (r.name||'\u2014');
+    var proj = r.projId ? getProjectById(r.projId) : null;
+    var status = proj ? proj.status : (r.projStatus || '—');
+    var statusColor = {Active:'#1e6b5e','On Hold':'#a05c10',Complete:'#1e3f8a',Pending:'#8a8780'}[status]||'#8a8780';
     var snapHtml = snap
       ? '<span style="font-size:10px;font-weight:700;color:#1e6b5e">'+escH(snap.stage||'—')+'</span><br>'
         +'<span style="font-size:10px;color:#4a4840">Spent: <b>'+l10FmtMoney(snap.feeSpent)+'</b> &middot; To invoice: <b style="color:#a05c10">'+l10FmtMoney(snap.feeRemain)+'</b></span><br>'
@@ -2828,6 +2863,7 @@ function l10Export(){
     return '<tr>'
       +'<td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;font-weight:600">'+escH(projName)+'</td>'
       +'<td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:11px;background:#fafaf7">'+snapHtml+'</td>'
+      +'<td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:11px;font-weight:700;color:'+statusColor+'">'+escH(status)+'</td>'
       +'<td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:11px;font-weight:700;color:'+fbCol(r.feedback)+'">'+escH(r.feedback||'')+'</td>'
       +'<td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:11px;font-weight:600">'+escH(r.owner||'')+'</td>'
       +'<td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:11px;color:#4a4840;line-height:1.5">'+escH(r.update||'').replace(/\n/g,'<br>')+'</td>'
@@ -2890,7 +2926,7 @@ function l10Export(){
     +'<h1>L10 Meeting Minutes</h1>'
     +'<div class="meta"><b>Week:</b> '+weekLabel+'&emsp;<b>Team:</b> BH &middot; AM &middot; JE &middot; AD &middot; AL</div>'
     +(checkinHtml?sec('1. Check-In',checkinHtml):'')
-    +(liveHtml?sec('2. Live Jobs','<table><thead><tr><th style="min-width:130px">Project</th><th style="min-width:150px">Stage / Financials</th><th style="min-width:110px">Feedback</th><th style="min-width:60px">Owner</th><th>Update / Actions</th></tr></thead><tbody>'+liveHtml+'</tbody></table>'):'')
+    +(liveHtml?sec('2. Live Jobs','<table><thead><tr><th style="min-width:130px">Project</th><th style="min-width:150px">Stage / Financials</th><th style="min-width:80px">Status</th><th style="min-width:110px">Feedback</th><th style="min-width:60px">Owner</th><th>Update / Actions</th></tr></thead><tbody>'+liveHtml+'</tbody></table>'):'')
     +(prosHtml?sec('2b. Prospective Jobs','<table><thead><tr><th style="min-width:160px">Opportunity</th><th style="min-width:70px">Owner</th><th>Status / Next Step</th></tr></thead><tbody>'+prosHtml+'</tbody></table>'):'')
     +sec('3. Dashboard / KPIs',kpiHtml+monthHtml)
     +(issuesHtml?sec('4. Issues &amp; Risks','<table><thead><tr><th>Priority</th><th>Issue / Risk</th><th>Owner</th></tr></thead><tbody>'+issuesHtml+'</tbody></table>'):'')
