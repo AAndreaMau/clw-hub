@@ -5,22 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CLW SOP Hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ink:#1c1b18;--ink2:#4a4840;--ink3:#8a8780;
-  --bg:#f5f3ed;--bg2:#eeece4;--bg3:#e5e2d8;
-  --white:#fafaf7;
-  --gold:#b8943a;--gold-l:#f5e8c0;
-  --teal:#1e6b5e;--teal-l:#d6ede8;
-  --blue:#1e3f8a;--blue-l:#dce5f5;
-  --red:#9e2d2d;--red-l:#f5dede;
-  --amber:#a05c10;--amber-l:#faecd6;
+  /* CLW Brand Palette */
+  --navy:#1c2b3a;--mid:#2e4057;--steel:#4a6274;--slate:#7a92a3;
+  --silver:#b0bec5;--mist:#e8edf0;--offwhite:#f5f7f8;
+  /* Aliases for Hub compatibility */
+  --ink:#1c2b3a;--ink2:#4a6274;--ink3:#7a92a3;
+  --bg:#f5f7f8;--bg2:#e8edf0;--bg3:#dde4e8;
+  --white:#ffffff;
+  --gold:#c8a96e;--gold-l:#f5ead6;
+  --teal:#2e7d56;--teal-l:#d4ede0;
+  --blue:#1c2b3a;--blue-l:#dce5f5;
+  --red:#c0392b;--red-l:#f5dede;
+  --amber:#d4830a;--amber-l:#faecd6;
   --purple:#5040a0;--purple-l:#e8e4f8;
-  --border:rgba(28,27,24,0.1);
-  --ff:'Syne',sans-serif;--fb:'Inter',sans-serif;
-  --r:8px;
+  --border:rgba(28,43,58,0.12);
+  --ff:'Montserrat','Trebuchet MS',sans-serif;
+  --fb:'Open Sans','Segoe UI',sans-serif;
+  --r:6px;
 }
 body{background:var(--bg);font-family:var(--fb);color:var(--ink);font-size:14px;min-height:100vh}
 .topbar{background:var(--ink);padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
@@ -469,6 +474,54 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
   .sync-avatars{display:flex;gap:4px}
   .sync-avatar{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:1.5px solid var(--ink)}
   @keyframes barFlash{0%,100%{opacity:1}50%{opacity:.3}}
+  /* ── CLW DASHBOARD COMPONENTS ── */
+  .page-title{font-family:var(--ff);font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+  .page-sub{font-size:11px;color:var(--slate);margin-top:3px;font-weight:300}
+  .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
+  .stat-card{background:var(--white);border:1px solid var(--mist);border-radius:var(--r);padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.06);position:relative;overflow:hidden}
+  .stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 var(--r) var(--r)}
+  .stat-card.c-navy::after{background:var(--navy)}
+  .stat-card.c-gold::after{background:var(--gold)}
+  .stat-card.c-green::after{background:var(--teal)}
+  .stat-card.c-amber::after{background:var(--amber)}
+  .stat-label{font-family:var(--ff);font-size:8px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--slate);margin-bottom:8px}
+  .stat-value{font-family:var(--ff);font-size:24px;font-weight:700;color:var(--navy);letter-spacing:-.02em;line-height:1}
+  .stat-sub{font-size:10px;color:var(--slate);margin-top:5px;font-weight:300}
+  .card{background:var(--white);border:1px solid var(--mist);border-radius:var(--r);box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:20px;overflow:hidden}
+  .card-header{padding:14px 18px;border-bottom:1px solid var(--mist);display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .card-title{font-family:var(--ff);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--navy);display:flex;align-items:center;gap:8px}
+  .badge{font-size:9px;font-family:var(--ff);font-weight:600;padding:2px 8px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase}
+  .badge-navy{background:var(--mist);color:var(--navy)}
+  .badge-amber{background:#fef3e2;color:var(--amber)}
+  .tbl-wrap{overflow-x:auto}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);font-family:var(--ff);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:none;transition:all .15s}
+  .btn-primary{background:var(--navy);color:white}.btn-primary:hover{background:var(--mid)}
+  .btn-secondary{background:var(--white);color:var(--navy);border:1px solid var(--mist)}.btn-secondary:hover{border-color:var(--navy)}
+  .btn-gold{background:var(--gold);color:white}.btn-gold:hover{opacity:.88}
+  .btn-danger{background:white;color:var(--red);border:1px solid #f5c6c2}.btn-danger:hover{background:var(--red);color:white}
+  .btn-sm{padding:5px 10px;font-size:9px}
+  .fc-filter-sel{padding:5px 10px;border:1px solid var(--mist);border-radius:var(--r);font-size:11px;font-family:var(--fb);background:var(--white);color:var(--navy);cursor:pointer}
+  .chart-wrap{padding:20px 24px 0;overflow-x:auto}
+  .chart-bars{display:flex;gap:6px;align-items:flex-end;padding-bottom:40px;position:relative;min-height:180px}
+  .bar-col{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:44px}
+  .bar-val{font-family:var(--ff);font-size:8px;color:var(--slate);white-space:nowrap;margin-bottom:2px;text-align:center}
+  .bar-rect{width:32px;border-radius:3px 3px 0 0;transition:height .3s;cursor:default;min-height:2px}
+  .bar-lbl{font-family:var(--ff);font-size:8px;color:var(--slate);margin-top:6px;white-space:nowrap;transform:rotate(-35deg);transform-origin:top left;position:absolute;bottom:0}
+  .dash-section{animation:fadeIn .2s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .mgr-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+  .sc-inp{width:68px;padding:3px 5px;border:1px solid var(--mist);border-radius:3px;text-align:right;font-size:11px;font-family:var(--fb);background:var(--white);color:var(--navy)}
+  .sc-inp:focus{outline:none;border-color:var(--gold)}
+  .sc-inp.has-val{background:var(--teal-l);border-color:var(--teal);font-weight:600;color:var(--teal)}
+  .fc-month-cell{padding:5px 6px;text-align:right;border-right:0.5px solid var(--mist)}
+  .fc-month-inp{width:72px;padding:3px 5px;border:1px solid var(--mist);border-radius:3px;text-align:right;font-size:11px;font-family:var(--fb);background:var(--white)}
+  .fc-month-inp:focus{outline:none;border-color:var(--gold)}
+  .fc-month-inp.has-val{background:var(--teal-l);border-color:var(--teal);color:var(--teal);font-weight:600}
+  .fc-cur-month{background:rgba(200,169,110,.1)!important}
+  .mist{color:var(--mist)}
+  @media(max-width:640px){.stat-grid{grid-template-columns:1fr 1fr}}
+
   @media print{.nav,.search-bar-wrap{display:none}.content{display:block!important;page-break-after:always}}
 </style>
 </head>
@@ -501,7 +554,7 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
   <button class="nav-btn" onclick="showTab('l10',this)">&#x1F4CB; L10</button>
   <button class="nav-btn" onclick="showTab('projects',this)">&#x1F9EE; Projects</button>
   <button class="nav-btn" onclick="showTab('timesheet',this)">&#x1F551; Timesheet</button>
-  <button class="nav-btn" onclick="showTab('forecast',this)">&#x1F4C8; Forecast</button>
+  <button class="nav-btn" onclick="showTab('forecast',this)">&#x1F4CA; Dashboard</button>
   <button class="nav-btn" onclick="showTab('fee',this)">&#xA3; Fee Calculator</button>
 </div>
 
@@ -1403,73 +1456,158 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
 <!-- FORECAST -->
 <div class="content" id="tab-forecast">
 
-  <!-- KPI Summary -->
-  <div class="fc-kpi-grid" id="fc-kpi-grid">
-    <div class="fc-kpi won"><div class="v" id="fc-kpi-week">£0</div><div class="l">Won This Week</div></div>
-    <div class="fc-kpi won"><div class="v" id="fc-kpi-month">£0</div><div class="l">Won This Month</div></div>
-    <div class="fc-kpi won"><div class="v" id="fc-kpi-qtr">£0</div><div class="l">Won This Quarter</div></div>
-    <div class="fc-kpi won"><div class="v" id="fc-kpi-year">£0</div><div class="l">Won This Year</div></div>
-    <div class="fc-kpi pipeline"><div class="v" id="fc-kpi-pipeline">£0</div><div class="l">Total Pipeline</div></div>
+  <!-- ── DASHBOARD OVERVIEW ── -->
+  <div class="dash-section" id="dash-overview">
+    <div class="page-header" style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--mist)">
+      <div>
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub" id="dash-date"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="fcShowSection('overview')">Overview</button>
+        <button class="btn btn-secondary btn-sm" onclick="fcShowSection('forecast')">Forecast</button>
+        <button class="btn btn-secondary btn-sm" onclick="fcShowSection('pipeline')">Pipeline</button>
+        <button class="btn btn-secondary btn-sm" onclick="fcShowSection('scorecard')">Scorecard</button>
+      </div>
+    </div>
+
+    <!-- KPI stat cards -->
+    <div class="stat-grid" id="fc-stat-grid"></div>
+
+    <!-- This month + Next month lists -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">&#x1F4C5; This Month <span class="badge badge-navy" id="fc-this-month-label"></span></div>
+        </div>
+        <div class="tbl-wrap"><table><tbody id="fc-this-month-list"></tbody></table></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">&#x1F4C6; Next Month <span class="badge badge-navy" id="fc-next-month-label"></span></div>
+        </div>
+        <div class="tbl-wrap"><table><tbody id="fc-next-month-list"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- Bar chart -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">12-Month Revenue Forecast</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-secondary btn-sm" onclick="fcChartShift(-6)">&#x25C0;</button>
+          <span style="font-size:11px;color:var(--slate)" id="fc-chart-range"></span>
+          <button class="btn btn-secondary btn-sm" onclick="fcChartShift(6)">&#x25B6;</button>
+        </div>
+      </div>
+      <div class="chart-wrap" id="fc-chart-wrap"></div>
+    </div>
   </div>
 
-  <!-- ── SECTION 1: PROJECTS WON ── -->
-  <div class="fc-section-head">
-    <div>
-      <div class="section-label" style="margin:0">Projects Won</div>
-      <div style="font-size:11px;color:var(--ink3);margin-top:2px">Log each new appointment when confirmed — drives the KPIs above</div>
+  <!-- ── FORECAST GRID ── -->
+  <div class="dash-section" id="dash-forecast" style="display:none">
+    <div class="page-header" style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--mist)">
+      <div>
+        <div class="page-title">Invoice Forecast</div>
+        <div class="page-sub">Monthly drawdown per project — reviewed weekly in L10</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select class="fc-filter-sel" id="fc-mgr-filter" onchange="fcRenderForecastGrid()">
+          <option value="">All managers</option>
+          <option>Andrea</option><option>Ben</option><option>Johnny</option><option>Adam</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="fcShift(-6)">&#x25C0; Earlier</button>
+        <span style="font-size:11px;color:var(--slate)" id="fc-win"></span>
+        <button class="btn btn-secondary btn-sm" onclick="fcShift(6)">Later &#x25B6;</button>
+        <span class="badge badge-navy" id="fc-badge"></span>
+        <button class="btn btn-primary btn-sm" onclick="fcAddForecastProject()">+ Add project</button>
+        <button class="btn btn-secondary btn-sm" onclick="fcShowSection('overview')">&#x2190; Back</button>
+      </div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="fc-add-btn" onclick="fcAddWon()">+ Add project won</button>
-      <button class="fc-save-btn" onclick="fcSave()">Save</button>
-      <div class="fc-saved-msg" id="fc-saved-msg">Saved ✓</div>
+    <div class="card" style="overflow:auto">
+      <table style="border-collapse:collapse;min-width:700px;width:100%;font-size:12px">
+        <thead id="fc-grid-head"></thead>
+        <tbody id="fc-grid-body"></tbody>
+        <tfoot id="fc-grid-foot"></tfoot>
+      </table>
     </div>
   </div>
 
-  <div class="card" style="padding:0;overflow:auto;margin-bottom:20px">
-    <table class="fc-won-table">
-      <thead>
-        <tr>
-          <th style="min-width:180px">Project Name</th>
-          <th style="min-width:90px">Manager</th>
-          <th style="min-width:110px">Client</th>
-          <th class="r" style="min-width:100px">Fee Won (£)</th>
-          <th style="min-width:110px">Date Won</th>
-          <th style="min-width:110px">Quarter</th>
-          <th style="min-width:80px">Or link to project</th>
-          <th style="width:28px"></th>
-        </tr>
-      </thead>
-      <tbody id="fc-won-tbody"></tbody>
-      <tfoot id="fc-won-tfoot"></tfoot>
-    </table>
-  </div>
-
-  <!-- ── SECTION 2: INVOICE FORECAST ── -->
-  <div class="fc-section-head">
-    <div>
-      <div class="section-label" style="margin:0">Invoice Forecast — Monthly Drawdown</div>
-      <div style="font-size:11px;color:var(--ink3);margin-top:2px">Enter expected invoice amounts per project per month. Reviewed weekly in L10.</div>
+  <!-- ── PIPELINE ── -->
+  <div class="dash-section" id="dash-pipeline" style="display:none">
+    <div class="page-header" style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--mist)">
+      <div>
+        <div class="page-title">Pipeline</div>
+        <div class="page-sub">Prospects not yet instructed</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-gold btn-sm" onclick="fcAddPipelineProject()">+ Add prospect</button>
+        <button class="btn btn-secondary btn-sm" onclick="fcShowSection('overview')">&#x2190; Back</button>
+      </div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="fc-add-btn" onclick="fcAddForecastRow()">+ Add project</button>
-      <div style="display:flex;align-items:center;gap:6px">
-        <button class="fc-add-btn" style="padding:5px 10px;font-size:10px" onclick="fcPrevMonths()">◀</button>
-        <span style="font-size:11px;color:var(--ink3)" id="fc-month-range">Loading…</span>
-        <button class="fc-add-btn" style="padding:5px 10px;font-size:10px" onclick="fcNextMonths()">▶</button>
+    <div class="stat-grid" id="pipe-stats" style="margin-bottom:20px"></div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Prospects <span class="badge badge-amber" id="pipe-badge"></span></div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Project</th><th>Manager</th><th>Client</th><th>PM</th>
+            <th class="td-r">Agreed (£)</th><th class="td-r">To Agree (£)</th>
+            <th>Stage</th><th>Notes</th><th style="width:100px"></th>
+          </tr></thead>
+          <tbody id="pipe-tbody"></tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <div class="fc-forecast-wrap">
-    <table class="fc-forecast-table" id="fc-forecast-table">
-      <thead id="fc-forecast-thead"></thead>
-      <tbody id="fc-forecast-tbody"></tbody>
-      <tfoot id="fc-forecast-tfoot"></tfoot>
-    </table>
+  <!-- ── SCORECARD ── -->
+  <div class="dash-section" id="dash-scorecard" style="display:none">
+    <div class="page-header" style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--mist)">
+      <div>
+        <div class="page-title">Scorecard</div>
+        <div class="page-sub">Work won &amp; billable hours by week</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="fc-filter-sel" id="sc-qtr" onchange="fcRenderScorecard()">
+          <option value="Q1-2026">Q1 2026</option>
+          <option value="Q2-2026" selected>Q2 2026</option>
+          <option value="Q3-2026">Q3 2026</option>
+          <option value="Q4-2026">Q4 2026</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="fcShowSection('overview')">&#x2190; Back</button>
+      </div>
+    </div>
+
+    <!-- Ben — Work Won -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <div class="card-title" style="color:var(--teal)">&#x1F3AF; Work Won — Ben Hickman</div>
+      </div>
+      <div style="padding:20px" id="sc-ben-won"></div>
+      <div style="overflow-x:auto;padding:0 20px 20px">
+        <table style="border-collapse:collapse;min-width:900px;font-size:11px">
+          <thead><tr id="sc-ben-head"></tr></thead>
+          <tbody><tr id="sc-ben-row"></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Team Billable Hours -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">&#x23F0; Team Billable Hours per Week</div>
+      </div>
+      <div style="overflow-x:auto;padding:0 20px 20px">
+        <table style="border-collapse:collapse;min-width:900px;font-size:11px" id="sc-team-table"></table>
+      </div>
+    </div>
   </div>
-  <div style="margin-top:10px;font-size:11px;color:var(--ink3)">&#x25CF; Green = value entered &nbsp;&#x25CF; Empty = no invoice expected that month</div>
 
 </div>
+
 
 <!-- FEE CALCULATOR -->
 <div class="content" id="tab-fee">
@@ -3331,389 +3469,539 @@ showTab = function(id,btn){
   if(id==='l10') l10Init();
 };
 
-/* ═══════════════════════════════════════
-   FORECAST MODULE
-═══════════════════════════════════════ */
 
-var fcWon=[{"id":"fw-htemplemenhouse","name":"Templemen House","manager":"JE","client":"Amiri House","fee":3960.0,"dateWon":"2025-12-09","projId":"htemplemenhouse"},{"id":"fw-h56thebishopsaven","name":"56 The Bishops Avenue","manager":"BH","client":"BISHOP AVENUE PROPERTY LIMITED","fee":30000.0,"dateWon":"2026-01-21","projId":"h56thebishopsaven"},{"id":"fw-h1knightsbridgegr","name":"1 Knightsbridge Green","manager":"AM","client":"BlackBurnltd","fee":74970.0,"dateWon":"2026-03-24","projId":"h1knightsbridgegr"},{"id":"fw-hdovetailbuilding","name":"Dovetail Building","manager":"JE","client":"GARDINER & THEOBALD LLP","fee":98340.0,"dateWon":"2026-01-26","projId":"hdovetailbuilding"},{"id":"fw-hstthomasyard","name":"St Thomas Yard","manager":"JE","client":"GPE (St Thomas Street) Limited","fee":1000.0,"dateWon":"2026-01-21","projId":"hstthomasyard"},{"id":"fw-h12burntwoodroadt","name":"12 Burntwood Road Town","manager":"AM","client":"Kirsty Amstrong","fee":3250.0,"dateWon":"2025-10-17","projId":"h12burntwoodroadt"},{"id":"fw-h7ridgmountstreet","name":"7 Ridgmount Street","manager":"JE","client":"SEBRE RIDGMOUNT LIMITED","fee":24000.0,"dateWon":"2025-11-20","projId":"h7ridgmountstreet"},{"id":"fw-h101clevelandstre","name":"101 Cleveland Street","manager":"AL","client":"Soho Data Holdings Limited","fee":10860.0,"dateWon":"2025-11-24","projId":"h101clevelandstre"},{"id":"fw-h15firschase","name":"15 Firs Chase","manager":"JE","client":"The Brennan Group","fee":24600.0,"dateWon":"2024-06-28","projId":"h15firschase"},{"id":"fw-h5thestrand","name":"5 The Strand","manager":"JE","client":"Whitbread Group PLC","fee":58400.0,"dateWon":"2024-10-10","projId":"h5thestrand"}];       // projects won log
-var fcForecast=[{"id":"ff-h1goldenlane","projId":"h1goldenlane","name":"1 Golden Lane","manager":"BH","totalFee":42960.0,"months":{}},{"id":"ff-h56thebishopsaven","projId":"h56thebishopsaven","name":"56 The Bishops Avenue","manager":"BH","totalFee":30000.0,"months":{}},{"id":"ff-h1knightsbridgegr","projId":"h1knightsbridgegr","name":"1 Knightsbridge Green","manager":"AM","totalFee":74970.0,"months":{}},{"id":"ff-hbritishmuseumbas","projId":"hbritishmuseumbas","name":"British Museum - Basement Works","manager":"AL","totalFee":18480.0,"months":{}},{"id":"ff-hbritishmuseumpod","projId":"hbritishmuseumpod","name":"British Museum - Podium Waterproofing","manager":"AL","totalFee":18450.0,"months":{}},{"id":"ff-h1112stjamessquar","projId":"h1112stjamessquar","name":"11-12 St James Square","manager":"AL","totalFee":28000.0,"months":{}},{"id":"ff-hdovetailbuilding","projId":"hdovetailbuilding","name":"Dovetail Building","manager":"JE","totalFee":98340.0,"months":{}},{"id":"ff-hholdenhouse","projId":"hholdenhouse","name":"Holden House","manager":"JE","totalFee":73860.0,"months":{}},{"id":"ff-h3335piccadilly","projId":"h3335piccadilly","name":"33-35 Piccadilly","manager":"JE","totalFee":25200.0,"months":{}},{"id":"ff-hthecourtyard","projId":"hthecourtyard","name":"The Courtyard","manager":"AL","totalFee":24300.0,"months":{}},{"id":"ff-htimbersquare","projId":"htimbersquare","name":"Timber Square","manager":"","totalFee":37020.0,"months":{}},{"id":"ff-hjesb","projId":"hjesb","name":"JESB","manager":"JE","totalFee":30530.0,"months":{}},{"id":"ff-h1hanoversquare","projId":"h1hanoversquare","name":"1 Hanover Square","manager":"AL","totalFee":29900.0,"months":{}},{"id":"ff-h75londonwallstag","projId":"h75londonwallstag","name":"75 London Wall - Stage 3-5","manager":"AL","totalFee":135700.0,"months":{}},{"id":"ff-hmileendrd","projId":"hmileendrd","name":"Mile End Rd","manager":"","totalFee":50900.0,"months":{}},{"id":"ff-h101clevelandstre","projId":"h101clevelandstre","name":"101 Cleveland Street","manager":"AL","totalFee":10860.0,"months":{}},{"id":"ff-hsouthbankcentre","projId":"hsouthbankcentre","name":"Southbank Centre","manager":"AL","totalFee":51000.0,"months":{}},{"id":"ff-h5thestrand","projId":"h5thestrand","name":"5 The Strand","manager":"JE","totalFee":58400.0,"months":{}}];  // invoice forecast rows
-var fcMonthOffset = 0; // scroll offset for months display
-var FC_MONTHS_VISIBLE = 12; // number of months to show at once
+/* ═══════════════════════════════════════════════════════
+   CLW DASHBOARD / FORECAST ENGINE
+   Replaces old fcWon / fcForecast modules
+   Data lives in: dashProjects[], dashScorecard{}
+   Compatible with JSONBin sync bundle
+═══════════════════════════════════════════════════════ */
 
-/* ── helpers ── */
-function fcFmt(n){ return n ? '\u00a3'+(Math.round(n)||0).toLocaleString('en-GB') : '\u2014'; }
-function fcFmtNum(n){ return '\u00a3'+(Math.round(n)||0).toLocaleString('en-GB'); }
-function fcToday(){ return new Date(); }
-function fcISOMonth(y,m){ return y+'-'+String(m+1).padStart(2,'0'); }
+// ── Data stores ──────────────────────────────────────────
+var dashProjects  = [];   // confirmed + prospective projects
+var dashScorecard = {};   // weekly scorecard per quarter
+var dashFcOffset  = 0;    // forecast window offset (months)
+var dashChartOff  = 0;    // chart window offset
+var dashSection   = 'overview'; // current visible section
 
-/* Build array of months from a start date */
-function fcGetMonths(offset, count){
+// ── Quarterly week labels ─────────────────────────────────
+var DASH_QTR_WEEKS = {
+  'Q1-2026':['5-Jan','12-Jan','19-Jan','26-Jan','2-Feb','9-Feb','16-Feb','23-Feb','2-Mar','9-Mar','16-Mar','23-Mar','30-Mar'],
+  'Q2-2026':['6-Apr','13-Apr','20-Apr','27-Apr','4-May','11-May','18-May','25-May','1-Jun','8-Jun','15-Jun','22-Jun','29-Jun'],
+  'Q3-2026':['6-Jul','13-Jul','20-Jul','27-Jul','3-Aug','10-Aug','17-Aug','24-Aug','31-Aug','7-Sep','14-Sep','21-Sep','28-Sep'],
+  'Q4-2026':['5-Oct','12-Oct','19-Oct','26-Oct','2-Nov','9-Nov','16-Nov','23-Nov','30-Nov','7-Dec','14-Dec','21-Dec','28-Dec']
+};
+
+// ── Manager colours ────────────────────────────────────────
+var DASH_MGR_COL = {
+  'Andrea':'#b5451b','Ben':'#2e7d56','Johnny':'#6b4c8a','Adam':'#2e4057','AL':'#b5451b'
+};
+
+// ── Helpers ────────────────────────────────────────────────
+function dashFmt(n){ return '\u00a3'+(Math.round(n)||0).toLocaleString('en-GB'); }
+function dashCurYM(){
+  var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function dashNextYM(ym,n){
+  n=n||1;
+  var y=parseInt(ym.slice(0,4)), m=parseInt(ym.slice(5))-1+n;
+  while(m>11){m-=12;y++;} while(m<0){m+=12;y--;}
+  return y+'-'+String(m+1).padStart(2,'0');
+}
+function dashFmtM(ym){
+  var d=new Date(parseInt(ym.slice(0,4)),parseInt(ym.slice(5))-1,1);
+  return d.toLocaleDateString('en-GB',{month:'short',year:'2-digit'});
+}
+
+// ── Section navigation ─────────────────────────────────────
+function fcShowSection(id){
+  dashSection = id;
+  ['overview','forecast','pipeline','scorecard'].forEach(function(s){
+    var el=document.getElementById('dash-'+s);
+    if(el) el.style.display = (s===id) ? 'block' : 'none';
+  });
+  if(id==='overview')   dashRenderOverview();
+  if(id==='forecast')   fcRenderForecastGrid();
+  if(id==='pipeline')   dashRenderPipeline();
+  if(id==='scorecard')  fcRenderScorecard();
+  // Highlight nav button
+  document.querySelectorAll('[onclick^="fcShowSection"]').forEach(function(b){
+    var s=b.getAttribute('onclick').match(/'(\w+)'/);
+    b.classList.toggle('btn-primary', s&&s[1]===id);
+    b.classList.toggle('btn-secondary', !(s&&s[1]===id));
+  });
+}
+
+// ── Seed dashProjects from existing Hub projects if empty ──
+function dashSeedFromProjects(){
+  if(dashProjects.length) return;
+  if(typeof projects === 'undefined' || !projects.length) return;
+  dashProjects = projects.filter(function(p){return p.name;}).map(function(p){
+    var totalFee = p.tasks ? p.tasks.reduce(function(a,t){return a+(parseFloat(t.fee)||0);},0) : 0;
+    if(p.harvestBudget) totalFee = parseFloat(p.harvestBudget)||totalFee;
+    return {
+      id: 'dp-'+p.id,
+      hubId: p.id,
+      name: p.name,
+      manager: p.l10Owner ? p.l10Owner.split('/')[0] : '',
+      client: p.address||'',
+      pm: '',
+      agreed: totalFee,
+      toAgree: 0,
+      pop: '',
+      notes: p.notes||'',
+      prospective: p.status==='Pending',
+      stage: '',
+      fees: p.fees||{}
+    };
+  });
+}
+
+// ── OVERVIEW ───────────────────────────────────────────────
+function dashRenderOverview(){
+  dashSeedFromProjects();
   var now = new Date();
-  var start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-  var months = [];
-  for(var i=0; i<count; i++){
-    var d = new Date(start.getFullYear(), start.getMonth()+i, 1);
-    months.push({
-      key: fcISOMonth(d.getFullYear(), d.getMonth()),
-      label: d.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}),
-      year: d.getFullYear(),
-      month: d.getMonth(),
-      isCurrentMonth: d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth()
-    });
-  }
-  return months;
+  document.getElementById('dash-date').textContent =
+    now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  var ym  = dashCurYM();
+  var nm  = dashNextYM(ym);
+  var conf = dashProjects.filter(function(p){return !p.prospective;});
+  var pipe = dashProjects.filter(function(p){return p.prospective;});
+
+  var thisM = conf.reduce(function(s,p){return s+((p.fees&&p.fees[ym])?+p.fees[ym]:0);},0);
+  var nextM = conf.reduce(function(s,p){return s+((p.fees&&p.fees[nm])?+p.fees[nm]:0);},0);
+  var pipeV = pipe.reduce(function(s,p){return s+(+p.agreed||0)+(+p.toAgree||0);},0);
+
+  // KPI cards
+  var grid = document.getElementById('fc-stat-grid');
+  if(grid) grid.innerHTML =
+    '<div class="stat-card c-navy"><div class="stat-label">Active Projects</div><div class="stat-value">'+conf.length+'</div><div class="stat-sub">confirmed instructions</div></div>'
+   +'<div class="stat-card c-gold"><div class="stat-label">This Month &mdash; '+dashFmtM(ym)+'</div><div class="stat-value">'+dashFmt(thisM)+'</div><div class="stat-sub">'+(thisM>=45000?'&#x2713; Above target':'Below &pound;45k target')+'</div></div>'
+   +'<div class="stat-card c-green"><div class="stat-label">Next Month &mdash; '+dashFmtM(nm)+'</div><div class="stat-value">'+dashFmt(nextM)+'</div><div class="stat-sub">'+(nextM>=45000?'&#x2713; Above target':'Below &pound;45k target')+'</div></div>'
+   +'<div class="stat-card c-amber"><div class="stat-label">Pipeline Value</div><div class="stat-value">'+dashFmt(pipeV)+'</div><div class="stat-sub">'+pipe.length+' prospects</div></div>';
+
+  // This / Next month lists
+  var makeList = function(items, mth){
+    if(!items.length) return '<tr><td colspan="3" style="padding:14px;text-align:center;font-size:12px;color:var(--slate)">No invoices scheduled</td></tr>';
+    return items
+      .filter(function(p){return p.fees&&p.fees[mth]&&+p.fees[mth]>0;})
+      .sort(function(a,b){return b.fees[mth]-a.fees[mth];})
+      .map(function(p){
+        var col = DASH_MGR_COL[p.manager]||'var(--slate)';
+        return '<tr><td class="td-name" style="padding:10px 16px">'+p.name+'</td>'
+          +'<td style="padding:10px 16px"><span class="mgr-dot" style="background:'+col+'"></span>'+p.manager+'</td>'
+          +'<td class="td-r" style="padding:10px 16px;font-weight:700;color:var(--teal)">'+dashFmt(p.fees[mth])+'</td></tr>';
+      }).join('');
+  };
+
+  var thisEl=document.getElementById('fc-this-month-list');
+  var nextEl=document.getElementById('fc-next-month-list');
+  if(thisEl) thisEl.innerHTML = makeList(conf, ym);
+  if(nextEl) nextEl.innerHTML = makeList(conf, nm);
+  var tl=document.getElementById('fc-this-month-label'); if(tl) tl.textContent=dashFmtM(ym);
+  var nl=document.getElementById('fc-next-month-label'); if(nl) nl.textContent=dashFmtM(nm);
+
+  dashRenderChart();
 }
 
-function fcPrevMonths(){ fcMonthOffset -= 6; fcRenderForecast(); }
-function fcNextMonths(){ fcMonthOffset += 6; fcRenderForecast(); }
+// ── BAR CHART ──────────────────────────────────────────────
+function dashRenderChart(){
+  var ym0 = dashNextYM(dashCurYM(), dashChartOff);
+  var months = Array.from({length:12},function(_,i){return dashNextYM(ym0,i);});
+  var conf = dashProjects.filter(function(p){return !p.prospective;});
+  var totals = months.map(function(m){
+    return conf.reduce(function(s,p){return s+((p.fees&&p.fees[m])?+p.fees[m]:0);},0);
+  });
+  var maxVal = Math.max.apply(null, totals.concat([1]));
+  var curYM = dashCurYM();
 
-/* ── Date helpers for KPI ── */
-function fcGetWeekBounds(){
-  var now = new Date(); var dow = now.getDay();
-  var mon = new Date(now); mon.setDate(now.getDate()-(dow===0?6:dow-1)); mon.setHours(0,0,0,0);
-  var sun = new Date(mon); sun.setDate(mon.getDate()+6); sun.setHours(23,59,59,999);
-  return {start:mon, end:sun};
-}
-function fcGetMonthBounds(){
-  var now = new Date();
-  var s = new Date(now.getFullYear(),now.getMonth(),1);
-  var e = new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999);
-  return {start:s, end:e};
-}
-function fcGetQtrBounds(){
-  var now = new Date(); var q = Math.floor(now.getMonth()/3);
-  var s = new Date(now.getFullYear(),q*3,1);
-  var e = new Date(now.getFullYear(),q*3+3,0,23,59,59,999);
-  return {start:s, end:e};
-}
-function fcGetYearBounds(){
-  var now = new Date();
-  return {start:new Date(now.getFullYear(),0,1), end:new Date(now.getFullYear(),11,31,23,59,59,999)};
-}
+  var rangeEl=document.getElementById('fc-chart-range');
+  if(rangeEl) rangeEl.textContent = dashFmtM(months[0])+' \u2013 '+dashFmtM(months[11]);
 
-function fcSumWon(start, end){
-  return fcWon.reduce(function(a,r){
-    if(!r.dateWon||!r.fee) return a;
-    var d = new Date(r.dateWon);
-    return (d>=start&&d<=end) ? a+(parseFloat(r.fee)||0) : a;
-  },0);
-}
+  var wrap = document.getElementById('fc-chart-wrap');
+  if(!wrap) return;
 
-/* ── KPI bar ── */
-function fcRenderKPIs(){
-  var wb=fcGetWeekBounds(), mb=fcGetMonthBounds(), qb=fcGetQtrBounds(), yb=fcGetYearBounds();
-  var week = fcSumWon(wb.start,wb.end);
-  var month = fcSumWon(mb.start,mb.end);
-  var qtr = fcSumWon(qb.start,qb.end);
-  var year = fcSumWon(yb.start,yb.end);
-
-  // Also include projects from the Projects tab
-  if(typeof projects !== 'undefined'){
-    projects.forEach(function(p){
-      if(!p.dateWon||!p.totalFee) return;
-      var d = new Date(p.dateWon);
-      var fee = parseFloat(p.totalFee)||0;
-      if(d>=wb.start&&d<=wb.end) week+=fee;
-      if(d>=mb.start&&d<=mb.end) month+=fee;
-      if(d>=qb.start&&d<=qb.end) qtr+=fee;
-      if(d>=yb.start&&d<=yb.end) year+=fee;
-    });
-  }
-
-  // Pipeline = sum of all forecast rows total fee
-  var pipeline = fcForecast.reduce(function(a,r){return a+(parseFloat(r.totalFee)||0);},0);
-
-  var s=function(id,v){var el=document.getElementById(id);if(el)el.textContent=fcFmtNum(v);};
-  s('fc-kpi-week',week); s('fc-kpi-month',month); s('fc-kpi-qtr',qtr);
-  s('fc-kpi-year',year); s('fc-kpi-pipeline',pipeline);
-
-  // Color week KPI
-  var weekEl=document.getElementById('fc-kpi-week');
-  if(weekEl) weekEl.style.color = week>0?'var(--teal)':'var(--ink3)';
-}
-
-/* ── PROJECTS WON ── */
-function fcRenderWon(){
-  var tbody = document.getElementById('fc-won-tbody');
-  var tfoot = document.getElementById('fc-won-tfoot');
-  if(!tbody) return;
-
-  // Pull projects from the Projects tab that have a dateWon
-  var projRows = typeof projects !== 'undefined' ? projects.filter(function(p){return p.dateWon;}).map(function(p){
-    return {id:'proj-'+p.id, name:p.name, manager:p.team&&p.team[0]||'', client:'', fee:p.tasks.reduce(function(a,t){return a+(parseFloat(t.fee)||0);},0), dateWon:p.dateWon, isLinked:true, projId:p.id};
-  }) : [];
-
-  // Combine manual entries + linked project entries (deduplicated)
-  var linkedIds = fcWon.filter(function(r){return r.projId;}).map(function(r){return r.projId;});
-  var allRows = fcWon.concat(projRows.filter(function(r){return linkedIds.indexOf(r.projId)===-1;}));
-
-  if(!allRows.length){
-    tbody.innerHTML='<tr><td colspan="8" style="padding:16px;text-align:center;font-size:12px;color:var(--ink3)">No projects won logged yet. Click \u201c+ Add project won\u201d to start.</td></tr>';
-    if(tfoot) tfoot.innerHTML='';
-    fcRenderKPIs(); return;
-  }
-
-  // Sort by date desc
-  allRows.sort(function(a,b){ return new Date(b.dateWon||0)-new Date(a.dateWon||0); });
-
-  var now = new Date();
-  var qtr = Math.floor(now.getMonth()/3)+1;
-
-  tbody.innerHTML = allRows.map(function(r,i){
-    var isManual = !r.isLinked;
-    var d = r.dateWon ? new Date(r.dateWon) : null;
-    var rQtr = d ? 'Q'+(Math.floor(d.getMonth()/3)+1)+' '+d.getFullYear() : '—';
-    var wb=fcGetWeekBounds(),mb=fcGetMonthBounds(),qb=fcGetQtrBounds();
-    var badge = '';
-    if(d){
-      if(d>=wb.start&&d<=wb.end) badge='<span class="fc-period-badge" style="background:var(--teal-l);color:var(--teal)">This week</span>';
-      else if(d>=mb.start&&d<=mb.end) badge='<span class="fc-period-badge" style="background:var(--blue-l);color:var(--blue)">This month</span>';
-      else if(d>=qb.start&&d<=qb.end) badge='<span class="fc-period-badge" style="background:var(--amber-l);color:var(--amber)">This qtr</span>';
-    }
-
-    if(r.isLinked){
-      // Read-only row from Projects tab
-      return '<tr style="background:var(--teal-l)">'
-        +'<td style="font-size:12px;font-weight:600;color:var(--teal)">'+escH(r.name)+' <span style="font-size:9px;background:var(--teal);color:#fff;padding:1px 5px;border-radius:8px;vertical-align:middle">Linked</span></td>'
-        +'<td style="font-size:11px">'+escH(r.manager||'')+'</td>'
-        +'<td style="font-size:11px">'+escH(r.client||'')+'</td>'
-        +'<td class="r" style="font-size:12px;font-weight:700;color:var(--teal)">'+fcFmtNum(r.fee)+'</td>'
-        +'<td style="font-size:11px">'+(d?d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—')+'</td>'
-        +'<td style="font-size:11px">'+rQtr+badge+'</td>'
-        +'<td style="font-size:10px;color:var(--ink3)">From Projects tab</td>'
-        +'<td></td>'
-      +'</tr>';
-    }
-
-    var idx = fcWon.indexOf(r);
-    return '<tr>'
-      +'<td><input type="text" value="'+escH(r.name||'')+'" placeholder="Project name" class="fc-input" style="width:100%" onchange="fcSetWon('+idx+',\'name\',this.value)"></td>'
-      +'<td><select class="fc-input" style="width:100%" onchange="fcSetWon('+idx+',\'manager\',this.value)">'
-          +'<option value="">—</option>'
-          +L10_OWNERS.map(function(o){return '<option'+(o===r.manager?' selected':'')+'>'+o+'</option>';}).join('')
-        +'</select></td>'
-      +'<td><input type="text" value="'+escH(r.client||'')+'" placeholder="Client" class="fc-input" style="width:100%" onchange="fcSetWon('+idx+',\'client\',this.value)"></td>'
-      +'<td class="r"><input type="number" value="'+(r.fee||'')+'" placeholder="0" class="fc-input" style="width:90px;text-align:right" onchange="fcSetWon('+idx+',\'fee\',this.value);fcRenderWon();fcRenderKPIs()"></td>'
-      +'<td><input type="date" value="'+(r.dateWon||'')+'" class="fc-input" style="width:130px" onchange="fcSetWon('+idx+',\'dateWon\',this.value);fcRenderWon();fcRenderKPIs()"></td>'
-      +'<td style="font-size:11px;color:var(--ink3)">'+rQtr+badge+'</td>'
-      +'<td>'
-        +'<select class="fc-input" style="width:100%;font-size:10px" onchange="fcSetWon('+idx+',\'projId\',this.value)">'
-          +'<option value="">— Link to project —</option>'
-          +(typeof projects!=='undefined'?projects.map(function(p){return '<option value="'+p.id+'"'+(p.id===r.projId?' selected':'')+'>'+escH(p.name)+'</option>';}).join(''):'')
-        +'</select>'
-      +'</td>'
-      +'<td><button class="fc-del-btn" onclick="fcDelWon('+idx+')">\u00D7</button></td>'
-    +'</tr>';
+  var bars = months.map(function(m, i){
+    var v = totals[i];
+    var h = Math.max(4, Math.round((v/maxVal)*160));
+    var isCur = m===curYM;
+    var col = isCur ? 'var(--gold)' : v>=45000 ? 'var(--teal)' : v>0 ? 'var(--navy)' : 'var(--mist)';
+    return '<div class="bar-col">'
+      +'<div class="bar-val">'+(v>0?dashFmt(v):'&mdash;')+'</div>'
+      +'<div class="bar-rect" style="height:'+h+'px;background:'+col+';width:32px;border-radius:3px 3px 0 0"></div>'
+      +'<div style="font-family:var(--ff);font-size:9px;color:var(--slate);margin-top:6px;text-align:center;white-space:nowrap">'+dashFmtM(m)+'</div>'
+    +'</div>';
   }).join('');
 
-  // Totals footer
-  var totalAll = allRows.reduce(function(a,r){return a+(parseFloat(r.fee)||0);},0);
-  var qb=fcGetQtrBounds(), mb=fcGetMonthBounds();
-  var totalQtr = allRows.filter(function(r){var d=new Date(r.dateWon||0);return d>=qb.start&&d<=qb.end;}).reduce(function(a,r){return a+(parseFloat(r.fee)||0);},0);
-  var totalMonth = allRows.filter(function(r){var d=new Date(r.dateWon||0);return d>=mb.start&&d<=mb.end;}).reduce(function(a,r){return a+(parseFloat(r.fee)||0);},0);
-
-  if(tfoot) tfoot.innerHTML='<tr>'
-    +'<td colspan="3" style="padding:9px 10px;background:var(--bg2);font-weight:700;font-size:11px">Totals</td>'
-    +'<td class="r" style="padding:9px 10px;background:var(--bg2);font-weight:700;color:var(--teal)">'+fcFmtNum(totalAll)+'</td>'
-    +'<td style="padding:9px 10px;background:var(--bg2)"></td>'
-    +'<td style="padding:9px 10px;background:var(--bg2);font-size:11px;color:var(--ink3)">Month: '+fcFmtNum(totalMonth)+' &middot; Qtr: '+fcFmtNum(totalQtr)+'</td>'
-    +'<td colspan="2" style="background:var(--bg2)"></td>'
-  +'</tr>';
-
-  fcRenderKPIs();
+  wrap.innerHTML = '<div class="chart-bars" style="display:flex;gap:8px;align-items:flex-end;padding:20px 0 10px;min-width:max-content">'+bars+'</div>';
 }
 
-function fcAddWon(){
-  fcWon.push({id:genId(),name:'',manager:'',client:'',fee:0,dateWon:new Date().toISOString().slice(0,10),projId:''});
-  fcRenderWon();
-}
-function fcSetWon(i,field,val){
-  if(fcWon[i]) fcWon[i][field]=field==='fee'?parseFloat(val)||0:val;
-}
-function fcDelWon(i){ fcWon.splice(i,1); fcRenderWon(); }
+function fcChartShift(n){ dashChartOff += n; dashRenderChart(); }
 
-/* ── INVOICE FORECAST ── */
-function fcRenderForecast(){
-  var months = fcGetMonths(fcMonthOffset, FC_MONTHS_VISIBLE);
-  var now = new Date();
+// ── FORECAST GRID ──────────────────────────────────────────
+function fcRenderForecastGrid(){
+  dashSeedFromProjects();
+  var mgr = (document.getElementById('fc-mgr-filter')||{}).value||'';
+  var conf = dashProjects.filter(function(p){return !p.prospective;});
+  if(mgr) conf = conf.filter(function(p){return p.manager&&p.manager.includes(mgr);});
 
-  // Update range label
-  var rangeEl=document.getElementById('fc-month-range');
-  if(rangeEl) rangeEl.textContent = months[0].label + ' \u2013 ' + months[months.length-1].label;
+  var ym0 = dashNextYM(dashCurYM(), dashFcOffset);
+  var months = Array.from({length:6},function(_,i){return dashNextYM(ym0,i);});
+  var curYM = dashCurYM();
 
-  var thead=document.getElementById('fc-forecast-thead');
-  var tbody=document.getElementById('fc-forecast-tbody');
-  var tfoot=document.getElementById('fc-forecast-tfoot');
+  var winEl=document.getElementById('fc-win'); if(winEl) winEl.textContent=dashFmtM(months[0])+' \u2013 '+dashFmtM(months[5]);
+  var badgeEl=document.getElementById('fc-badge'); if(badgeEl) badgeEl.textContent=conf.length+' projects';
+
+  var thead=document.getElementById('fc-grid-head');
+  var tbody=document.getElementById('fc-grid-body');
+  var tfoot=document.getElementById('fc-grid-foot');
   if(!thead||!tbody||!tfoot) return;
 
-  // Header
-  thead.innerHTML='<tr>'
-    +'<th class="label-th">Project</th>'
-    +'<th class="r" style="min-width:80px">Manager</th>'
-    +'<th class="r" style="min-width:90px">Total Fee</th>'
-    +'<th class="r" style="min-width:90px">Left to Inv.</th>'
+  thead.innerHTML='<tr style="background:var(--offwhite)">'
+    +'<th style="padding:9px 14px;font-family:var(--ff);font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist);min-width:160px">Project</th>'
+    +'<th style="padding:9px 10px;font-family:var(--ff);font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist);min-width:70px">Manager</th>'
+    +'<th style="padding:9px 10px;font-family:var(--ff);font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist);text-align:right;min-width:80px">Agreed</th>'
     +months.map(function(m){
-      return '<th class="r'+(m.isCurrentMonth?' fc-today-col':'')+'" style="min-width:80px">'+m.label+'</th>';
+      var isCur=m===curYM;
+      return '<th style="padding:9px 8px;font-family:var(--ff);font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:'+(isCur?'var(--amber)':'var(--slate)')+';border-bottom:1px solid var(--mist);text-align:right;min-width:80px;'+(isCur?'background:rgba(200,169,110,.08)':'')+'">'+dashFmtM(m)+'</th>';
     }).join('')
-    +'<th style="width:28px"></th>'
+    +'<th style="padding:9px 10px;font-family:var(--ff);font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist);text-align:right;min-width:80px">Total</th>'
+    +'<th style="width:28px;border-bottom:1px solid var(--mist)"></th>'
   +'</tr>';
 
-  if(!fcForecast.length){
-    tbody.innerHTML='<tr><td colspan="'+(5+months.length)+'" style="padding:18px;text-align:center;font-size:12px;color:var(--ink3)">No forecast rows yet. Click \u201c+ Add project\u201d to build your invoice forecast.</td></tr>';
+  if(!conf.length){
+    tbody.innerHTML='<tr><td colspan="'+(months.length+4)+'" style="padding:20px;text-align:center;font-size:12px;color:var(--slate)">No projects yet. Click &ldquo;+ Add project&rdquo; to build your forecast.</td></tr>';
     tfoot.innerHTML=''; return;
   }
 
-  tbody.innerHTML = fcForecast.map(function(row,i){
-    var totalPlanned = months.reduce(function(a,m){return a+(parseFloat(row.months&&row.months[m.key])||0);},0);
-    // Also count months outside visible range
-    var totalAllMonths = row.months ? Object.values(row.months).reduce(function(a,v){return a+(parseFloat(v)||0);},0) : 0;
-    var totalFee = parseFloat(row.totalFee)||0;
-    var leftToInv = Math.max(0, totalFee - totalAllMonths);
-    var pct = totalFee>0 ? Math.min(100,Math.round(totalAllMonths/totalFee*100)) : 0;
-    var barCol = pct>=100?'var(--teal)':pct>=60?'var(--amber)':'var(--blue)';
-
-    // Try to pull from Projects tab if linked
-    var linkedProj = row.projId&&typeof getProjectById!=='undefined' ? getProjectById(row.projId) : null;
-    var displayName = linkedProj ? linkedProj.name : (row.name||'Unnamed project');
-    if(linkedProj && !row.totalFee) {
-      totalFee = linkedProj.tasks.reduce(function(a,t){return a+(parseFloat(t.fee)||0);},0);
-      leftToInv = Math.max(0, totalFee - totalAllMonths);
-    }
-
+  tbody.innerHTML = conf.map(function(p, pi){
+    var wt = months.reduce(function(s,m){return s+((p.fees&&p.fees[m])?+p.fees[m]:0);},0);
+    var col = DASH_MGR_COL[p.manager]||'var(--slate)';
     return '<tr>'
-      // Label: project name + optional link selector
-      +'<td class="label-td">'
-        +(row.projId
-          ? '<div style="font-weight:600;font-size:12px;color:var(--ink)">'+escH(displayName)+'</div>'
-            +'<div style="font-size:9px;color:var(--teal)">Linked to project</div>'
-          : '<input type="text" value="'+escH(row.name||'')+'" placeholder="Project name" class="fc-input" style="width:100%;font-size:11px;font-weight:600" onchange="fcSetForecast('+i+',\'name\',this.value)">'
-        )
-        +'<div class="fc-prog-bar-wrap"><div class="fc-prog-bar" style="width:'+pct+'%;background:'+barCol+'"></div></div>'
-      +'</td>'
-      // Manager
-      +'<td style="text-align:right;font-size:11px">'
-        +'<select class="fc-input" style="width:70px;font-size:10px" onchange="fcSetForecast('+i+',\'manager\',this.value)">'
-          +'<option value="">—</option>'
-          +L10_OWNERS.map(function(o){return '<option'+(o===row.manager?' selected':'')+'>'+o+'</option>';}).join('')
-        +'</select>'
-      +'</td>'
-      // Total fee
-      +'<td style="text-align:right">'
-        +'<input type="number" value="'+(row.totalFee||'')+'" placeholder="Total fee" class="fc-input" style="width:80px;text-align:right;font-size:11px" onchange="fcSetForecast('+i+',\'totalFee\',this.value);fcRenderForecast()">'
-      +'</td>'
-      // Left to invoice
-      +'<td style="text-align:right;font-size:12px;font-weight:700;color:'+(leftToInv>0?'var(--amber)':'var(--teal)')+'">'+fcFmtNum(leftToInv)+'</td>'
-      // Monthly cells
+      +'<td style="padding:10px 14px;font-weight:600;font-size:12px;color:var(--navy);border-bottom:0.5px solid var(--mist)">'+p.name+'</td>'
+      +'<td style="padding:10px 10px;border-bottom:0.5px solid var(--mist)"><span class="mgr-dot" style="background:'+col+'"></span><span style="font-size:11px">'+p.manager+'</span></td>'
+      +'<td style="padding:10px 10px;text-align:right;font-size:11px;color:var(--slate);border-bottom:0.5px solid var(--mist)">'+dashFmt(p.agreed||0)+'</td>'
       +months.map(function(m){
-        var val = row.months&&row.months[m.key] ? row.months[m.key] : '';
-        var hasVal = val && parseFloat(val)>0;
-        return '<td style="text-align:right;padding:4px 6px'+(m.isCurrentMonth?';background:var(--gold-l)':'')+'">'
-          +'<input type="number" value="'+(hasVal?Math.round(parseFloat(val)):'')+'" placeholder="" '
-            +'class="fc-month-input'+(hasVal?' has-value':'')+'" '
-            +'onchange="fcSetMonth('+i+',\''+m.key+'\',this.value)" '
-            +'oninput="this.className=\'fc-month-input\'+(this.value&&parseFloat(this.value)>0?\' has-value\':\'\')">'
+        var v=(p.fees&&p.fees[m])?+p.fees[m]:0;
+        var isCur=m===curYM;
+        return '<td style="padding:5px 6px;border-bottom:0.5px solid var(--mist);'+(isCur?'background:rgba(200,169,110,.06)':'')+'">'
+          +'<input type="number" value="'+(v||'')+'" placeholder="" '
+          +'class="fc-month-inp'+(v?' has-val':'')+'" '
+          +'onchange="dashSetFee(\''+p.id+'\',\''+m+'\',this.value)" '
+          +'oninput="this.className=\'fc-month-inp\'+(this.value&&+this.value>0?\' has-val\':\'\')">'
         +'</td>';
       }).join('')
-      // Delete
-      +'<td style="padding:4px"><button class="fc-del-btn" onclick="fcDelForecast('+i+')">\u00D7</button></td>'
+      +'<td style="padding:10px;text-align:right;font-weight:700;font-size:12px;color:var(--teal);border-bottom:0.5px solid var(--mist)">'+(wt?dashFmt(wt):'&mdash;')+'</td>'
+      +'<td style="padding:10px 6px;border-bottom:0.5px solid var(--mist)">'
+        +'<button style="padding:2px 6px;background:none;border:none;color:var(--red);cursor:pointer;opacity:.3;font-size:14px" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.3" onclick="dashDelProject(\''+p.id+'\')">\u00D7</button>'
+      +'</td>'
     +'</tr>';
   }).join('');
 
   // Totals footer
-  var monthTotals = months.map(function(m){
-    return fcForecast.reduce(function(a,row){return a+(parseFloat(row.months&&row.months[m.key])||0);},0);
+  var colTotals = months.map(function(m){
+    return conf.reduce(function(s,p){return s+((p.fees&&p.fees[m])?+p.fees[m]:0);},0);
   });
-  var grandLeft = fcForecast.reduce(function(a,row){
-    var totalFee=parseFloat(row.totalFee)||0;
-    var inv=row.months?Object.values(row.months).reduce(function(s,v){return s+(parseFloat(v)||0);},0):0;
-    return a+Math.max(0,totalFee-inv);
-  },0);
-  var grandFee = fcForecast.reduce(function(a,row){return a+(parseFloat(row.totalFee)||0);},0);
-
-  tfoot.innerHTML='<tr>'
-    +'<td class="label-td" style="background:var(--bg2);font-weight:700;font-size:11px;border-top:2px solid var(--border)">Monthly Totals</td>'
-    +'<td style="background:var(--bg2);border-top:2px solid var(--border)"></td>'
-    +'<td style="background:var(--bg2);border-top:2px solid var(--border);text-align:right;font-weight:700;font-size:12px">'+fcFmtNum(grandFee)+'</td>'
-    +'<td style="background:var(--bg2);border-top:2px solid var(--border);text-align:right;font-weight:700;font-size:12px;color:var(--amber)">'+fcFmtNum(grandLeft)+'</td>'
-    +monthTotals.map(function(t,i){
-      var m=months[i];
-      var col = t===0?'var(--ink3)':t>50000?'var(--teal)':t>20000?'var(--amber)':'var(--ink)';
-      return '<td style="text-align:right;font-weight:700;font-size:12px;border-top:2px solid var(--border);background:'+(m.isCurrentMonth?'var(--gold-l)':'var(--bg2)')+';color:'+col+'">'+(t>0?fcFmtNum(t):'—')+'</td>';
+  var grandTotal = colTotals.reduce(function(a,v){return a+v;},0);
+  tfoot.innerHTML='<tr style="background:var(--offwhite)">'
+    +'<td colspan="3" style="padding:10px 14px;font-family:var(--ff);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;border-top:2px solid var(--navy)">Monthly Totals</td>'
+    +colTotals.map(function(t,i){
+      var m=months[i]; var isCur=m===dashCurYM();
+      var col=t>=45000?'var(--teal)':t>0?'var(--amber)':'var(--slate)';
+      return '<td style="padding:10px 6px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid var(--navy);color:'+col+';'+(isCur?'background:rgba(200,169,110,.08)':'')+'">'+(t?dashFmt(t):'&mdash;')+'</td>';
     }).join('')
-    +'<td style="background:var(--bg2);border-top:2px solid var(--border)"></td>'
+    +'<td style="padding:10px;text-align:right;font-weight:700;font-size:13px;border-top:2px solid var(--navy);color:var(--navy)">'+dashFmt(grandTotal)+'</td>'
+    +'<td style="border-top:2px solid var(--navy)"></td>'
   +'</tr>';
-
-  fcRenderKPIs();
 }
 
-function fcAddForecastRow(){
-  // Show a modal: pick from projects or enter manually
-  var projOpts = typeof projects!=='undefined' ? projects.map(function(p){
-    var fee=p.tasks.reduce(function(a,t){return a+(parseFloat(t.fee)||0);},0);
-    return '<option value="'+p.id+'">'+escH(p.name)+(fee?' ('+fcFmtNum(fee)+')':'')+'</option>';
+function dashSetFee(projId, ym, val){
+  var p = dashProjects.find(function(x){return x.id===projId;});
+  if(!p) return;
+  if(!p.fees) p.fees={};
+  var v=parseFloat(val)||0;
+  if(v>0) p.fees[ym]=v; else delete p.fees[ym];
+  syncAutoSave();
+}
+
+function fcShift(n){ dashFcOffset+=n; fcRenderForecastGrid(); }
+
+function fcAddForecastProject(){
+  // Show modal — pick from hub projects or enter manually
+  var opts = typeof projects!=='undefined' ? projects.map(function(p){
+    return '<option value="'+p.id+'">'+p.name+'</option>';
   }).join('') : '';
-  showModal('Add Forecast Row',
-    '<div class="form-row"><div class="form-group"><label class="form-label">Link to existing project (optional)</label>'
-      +'<select class="form-input" id="m-fcproj"><option value="">— Manual entry —</option>'+projOpts+'</select>'
-    +'</div></div>'
-    +'<div class="form-row"><div class="form-group"><label class="form-label">Or enter project name</label>'
-      +'<input class="form-input" id="m-fcname" placeholder="e.g. 75 London Wall">'
-    +'</div></div>'
-    +'<div class="form-row"><div class="form-group"><label class="form-label">Total Fee (£)</label>'
-      +'<input class="form-input" id="m-fcfee" type="number" placeholder="0">'
-    +'</div>'
+  showModal('Add Project to Forecast',
+    '<div class="form-row"><div class="form-group"><label class="form-label">Link to Hub project (optional)</label>'
+      +'<select class="form-input" id="m-dp-hub"><option value="">— Manual entry —</option>'+opts+'</select></div></div>'
+    +'<div class="form-row"><div class="form-group"><label class="form-label">Project Name *</label>'
+      +'<input class="form-input" id="m-dp-name" placeholder="e.g. 12 King St"></div>'
     +'<div class="form-group"><label class="form-label">Manager</label>'
-      +'<select class="form-input" id="m-fcmgr"><option value="">—</option>'+L10_OWNERS.map(function(o){return '<option>'+o+'</option>';}).join('')+'</select>'
-    +'</div></div>',
+      +'<select class="form-input" id="m-dp-mgr"><option>Andrea</option><option>Ben</option><option>Johnny</option><option>Adam</option></select></div></div>'
+    +'<div class="form-row"><div class="form-group"><label class="form-label">Client</label>'
+      +'<input class="form-input" id="m-dp-client"></div>'
+    +'<div class="form-group"><label class="form-label">Agreed Fee (£)</label>'
+      +'<input class="form-input" type="number" id="m-dp-agreed" min="0"></div></div>',
     function(){
-      var projId=document.getElementById('m-fcproj').value;
-      var name=document.getElementById('m-fcname').value.trim();
-      var fee=parseFloat(document.getElementById('m-fcfee').value)||0;
-      var mgr=document.getElementById('m-fcmgr').value;
-      var proj=projId&&typeof getProjectById!=='undefined'?getProjectById(projId):null;
-      if(proj&&!fee) fee=proj.tasks.reduce(function(a,t){return a+(parseFloat(t.fee)||0);},0);
-      if(proj&&!name) name=proj.name;
-      if(!name&&!projId){alert('Enter a project name or select a project.');return false;}
-      fcForecast.push({id:genId(),projId:projId,name:name,manager:mgr,totalFee:fee,months:{}});
-      fcRenderForecast();
+      var hubId = document.getElementById('m-dp-hub').value;
+      var name  = document.getElementById('m-dp-name').value.trim();
+      var hubProj = hubId && typeof projects!=='undefined' ? projects.find(function(p){return p.id===hubId;}) : null;
+      if(hubProj && !name) name = hubProj.name;
+      if(!name){ alert('Project name required'); return false; }
+      var agreed = parseFloat(document.getElementById('m-dp-agreed').value)||0;
+      if(hubProj && !agreed){
+        agreed = hubProj.tasks ? hubProj.tasks.reduce(function(a,t){return a+(parseFloat(t.fee)||0);},0) : (parseFloat(hubProj.harvestBudget)||0);
+      }
+      dashProjects.push({
+        id:'dp-'+Date.now(), hubId:hubId,
+        name:name, manager:document.getElementById('m-dp-mgr').value,
+        client:document.getElementById('m-dp-client').value,
+        agreed:agreed, toAgree:0, pm:'', pop:'', notes:'',
+        prospective:false, fees:{}
+      });
+      fcRenderForecastGrid();
+      syncAutoSave();
       return true;
-    },'Add to Forecast'
+    }, 'Add to Forecast'
   );
 }
 
-function fcSetForecast(i,field,val){
-  if(!fcForecast[i]) return;
-  fcForecast[i][field] = field==='totalFee' ? parseFloat(val)||0 : val;
-}
-function fcSetMonth(i,monthKey,val){
-  if(!fcForecast[i]) return;
-  if(!fcForecast[i].months) fcForecast[i].months={};
-  var v=parseFloat(val)||0;
-  if(v>0) fcForecast[i].months[monthKey]=v;
-  else delete fcForecast[i].months[monthKey];
-  fcRenderForecast();
-}
-function fcDelForecast(i){ fcForecast.splice(i,1); fcRenderForecast(); }
-
-function fcSave(){
-  var msg=document.getElementById('fc-saved-msg');
-  if(msg){msg.style.opacity='1';setTimeout(function(){msg.style.opacity='0';},2000);}
+function dashDelProject(id){
+  if(!confirm('Remove from forecast?')) return;
+  dashProjects = dashProjects.filter(function(p){return p.id!==id;});
+  if(dashSection==='forecast') fcRenderForecastGrid();
+  if(dashSection==='pipeline') dashRenderPipeline();
+  syncAutoSave();
 }
 
-function fcInit(){
-  fcRenderWon();
-  fcRenderForecast();
+// ── PIPELINE ───────────────────────────────────────────────
+function dashRenderPipeline(){
+  dashSeedFromProjects();
+  var list = dashProjects.filter(function(p){return p.prospective;});
+  var tv = list.reduce(function(s,p){return s+(+p.agreed||0)+(+p.toAgree||0);},0);
+
+  var statsEl=document.getElementById('pipe-stats');
+  if(statsEl) statsEl.innerHTML=
+    '<div class="stat-card c-amber"><div class="stat-label">Prospects</div><div class="stat-value">'+list.length+'</div><div class="stat-sub">not yet instructed</div></div>'
+   +'<div class="stat-card c-gold"><div class="stat-label">Pipeline Value</div><div class="stat-value">'+dashFmt(tv)+'</div><div class="stat-sub">estimated potential fees</div></div>';
+
+  var badge=document.getElementById('pipe-badge'); if(badge) badge.textContent=list.length+' prospects';
+  var tbody=document.getElementById('pipe-tbody'); if(!tbody) return;
+
+  if(!list.length){
+    tbody.innerHTML='<tr><td colspan="9" style="padding:20px;text-align:center;font-size:12px;color:var(--slate)">No prospects yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(function(p){
+    var col=DASH_MGR_COL[p.manager]||'var(--slate)';
+    return '<tr>'
+      +'<td class="td-name" style="padding:11px 16px">'+p.name+'</td>'
+      +'<td style="padding:11px 16px"><span class="mgr-dot" style="background:'+col+'"></span>'+p.manager+'</td>'
+      +'<td style="padding:11px 16px;font-size:12px;color:var(--steel)">'+p.client+'</td>'
+      +'<td style="padding:11px 16px;font-size:12px;color:var(--steel)">'+p.pm+'</td>'
+      +'<td class="td-r" style="padding:11px 16px;font-weight:700;color:var(--navy)">'+dashFmt(p.agreed||0)+'</td>'
+      +'<td class="td-r" style="padding:11px 16px;color:var(--slate)">'+dashFmt(p.toAgree||0)+'</td>'
+      +'<td style="padding:11px 16px;font-size:11px;color:var(--slate)">'+escH(p.stage||'')+'</td>'
+      +'<td style="padding:11px 16px;font-size:11px;color:var(--steel);max-width:180px">'+escH(p.notes||'')+'</td>'
+      +'<td style="padding:11px 16px;white-space:nowrap">'
+        +'<button class="btn btn-gold btn-sm" onclick="dashPromote(\''+p.id+'\')">&#x2191; Promote</button> '
+        +'<button class="btn btn-danger btn-sm" onclick="dashDelProject(\''+p.id+'\')">&#x2715;</button>'
+      +'</td>'
+    +'</tr>';
+  }).join('');
 }
 
-/* Hook into showTab */
-var _fcOrigShowTab = showTab;
-showTab = function(id,btn){
-  _fcOrigShowTab.call(this,id,btn);
-  if(id==='forecast') fcInit();
+function fcAddPipelineProject(){
+  showModal('Add Prospect',
+    '<div class="form-row"><div class="form-group"><label class="form-label">Project Name *</label><input class="form-input" id="m-pp-name" placeholder="e.g. Crown Estate"></div>'
+    +'<div class="form-group"><label class="form-label">Manager</label><select class="form-input" id="m-pp-mgr"><option>Andrea</option><option>Ben</option><option>Johnny</option><option>Adam</option></select></div></div>'
+    +'<div class="form-row"><div class="form-group"><label class="form-label">Client</label><input class="form-input" id="m-pp-client"></div>'
+    +'<div class="form-group"><label class="form-label">PM / Contact</label><input class="form-input" id="m-pp-pm"></div></div>'
+    +'<div class="form-row"><div class="form-group"><label class="form-label">Fee Agreed (£)</label><input class="form-input" type="number" id="m-pp-agreed" min="0"></div>'
+    +'<div class="form-group"><label class="form-label">Fee to Agree (£)</label><input class="form-input" type="number" id="m-pp-toagree" min="0"></div></div>'
+    +'<div class="form-row"><div class="form-group"><label class="form-label">Stage</label><input class="form-input" id="m-pp-stage" placeholder="e.g. Shortlisted"></div>'
+    +'<div class="form-group"><label class="form-label">Notes</label><input class="form-input" id="m-pp-notes"></div></div>',
+    function(){
+      var name=document.getElementById('m-pp-name').value.trim();
+      if(!name){alert('Project name required');return false;}
+      dashProjects.push({
+        id:'pp-'+Date.now(),name:name,
+        manager:document.getElementById('m-pp-mgr').value,
+        client:document.getElementById('m-pp-client').value,
+        pm:document.getElementById('m-pp-pm').value,
+        agreed:parseFloat(document.getElementById('m-pp-agreed').value)||0,
+        toAgree:parseFloat(document.getElementById('m-pp-toagree').value)||0,
+        stage:document.getElementById('m-pp-stage').value,
+        notes:document.getElementById('m-pp-notes').value,
+        prospective:true, fees:{}
+      });
+      dashRenderPipeline();
+      syncAutoSave();
+      return true;
+    },'Add Prospect'
+  );
+}
+
+function dashPromote(id){
+  var p=dashProjects.find(function(x){return x.id===id;});
+  if(!p||!confirm('Promote "'+p.name+'" to active project?')) return;
+  p.prospective=false; p.stage=undefined;
+  dashRenderPipeline();
+  syncAutoSave();
+  syncToast('\u2713 "'+p.name+'" promoted to active');
+}
+
+// ── SCORECARD ──────────────────────────────────────────────
+function fcRenderScorecard(){
+  var qtr=(document.getElementById('sc-qtr')||{}).value||'Q2-2026';
+  var weeks=DASH_QTR_WEEKS[qtr]||[];
+  if(!dashScorecard[qtr]) dashScorecard[qtr]={
+    Ben:{workWon:new Array(13).fill(0),target:195000},
+    Adam:{billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)},
+    Johnny:{billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)},
+    Andrea:{billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)}
+  };
+  var qd=dashScorecard[qtr];
+  var ben=qd.Ben||{workWon:new Array(13).fill(0),target:195000};
+  var bT=ben.workWon.reduce(function(s,v){return s+(+v||0);},0);
+  var bTgt=ben.target||195000;
+  var bPct=Math.min(Math.round((bT/bTgt)*100),100);
+  var barCol=bPct>=100?'var(--teal)':bPct>=75?'var(--amber)':'var(--navy)';
+
+  // Ben won summary
+  var benEl=document.getElementById('sc-ben-won');
+  if(benEl) benEl.innerHTML=
+    '<div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin-bottom:16px">'
+      +'<div><div style="font-family:var(--ff);font-size:28px;font-weight:700;color:var(--navy);letter-spacing:-.02em">'+dashFmt(bT)+'</div>'
+        +'<div style="font-size:10px;color:var(--slate);font-family:var(--ff);font-weight:500;letter-spacing:.06em;text-transform:uppercase">of '+dashFmt(bTgt)+' target</div>'
+      +'</div>'
+      +'<div style="flex:1;min-width:160px">'
+        +'<div style="height:10px;background:var(--mist);border-radius:5px;overflow:hidden;margin-bottom:6px">'
+          +'<div style="height:100%;width:'+bPct+'%;background:'+barCol+';border-radius:5px;transition:width .4s"></div>'
+        +'</div>'
+        +'<div style="font-size:11px;color:var(--slate)">'+bPct+'% of quarterly target &mdash; '+dashFmt(bTgt-bT)+' remaining</div>'
+      +'</div>'
+    +'</div>';
+
+  // Ben weekly input row
+  var headEl=document.getElementById('sc-ben-head');
+  var rowEl=document.getElementById('sc-ben-row');
+  if(headEl) headEl.innerHTML='<th style="padding:7px 10px;text-align:left;font-family:var(--ff);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist)">Week</th>'
+    +weeks.map(function(w){return '<th style="padding:7px 6px;text-align:center;font-family:var(--ff);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist)">'+w+'</th>';}).join('');
+  if(rowEl) rowEl.innerHTML='<td style="padding:7px 10px;font-weight:700;font-family:var(--ff);font-size:11px">Work Won (£)</td>'
+    +weeks.map(function(w,wi){
+      var v=ben.workWon[wi]||0;
+      return '<td style="padding:4px 4px;text-align:center">'
+        +'<input type="number" class="sc-inp'+(v?' has-val':'')+'" value="'+(v||'')+'" placeholder="—" '
+        +'onchange="dashSetBenWon(\''+qtr+'\','+wi+',this.value)" '
+        +'oninput="this.className=\'sc-inp\'+(this.value&&+this.value>0?\' has-val\':\'\')">'
+      +'</td>';
+    }).join('');
+
+  // Team billable hours
+  var teamTbl=document.getElementById('sc-team-table');
+  if(!teamTbl) return;
+  var members=['Adam','Johnny','Andrea'];
+  var rows=['billable','holiday','sick'];
+  var rowLabels={billable:'Billable Hours',holiday:'Holiday (days)',sick:'Sick (days)'};
+  var rowCols={billable:'var(--teal)',holiday:'var(--amber)',sick:'var(--red)'};
+
+  var thead='<thead><tr><th style="padding:7px 10px;text-align:left;font-family:var(--ff);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist)">Person / Metric</th>'
+    +weeks.map(function(w){return '<th style="padding:7px 6px;text-align:center;font-family:var(--ff);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist)">'+w+'</th>';}).join('')
+  +'</tr></thead>';
+
+  var tbody='<tbody>';
+  members.forEach(function(mem){
+    var md=qd[mem]||{billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)};
+    var memCol=DASH_MGR_COL[mem]||'var(--slate)';
+    rows.forEach(function(row,ri){
+      tbody+='<tr>'
+        +'<td style="padding:7px 10px;border-bottom:0.5px solid var(--mist);white-space:nowrap">'
+          +(ri===0?'<span class="mgr-dot" style="background:'+memCol+'"></span><strong style="font-size:11px">'+mem+'</strong> &mdash; ':'<span style="display:inline-block;width:11px"></span>')
+          +'<span style="font-size:10px;color:'+rowCols[row]+';font-weight:600">'+rowLabels[row]+'</span>'
+        +'</td>'
+        +weeks.map(function(w,wi){
+          var v=(md[row]&&md[row][wi])||0;
+          return '<td style="padding:3px 4px;text-align:center;border-bottom:0.5px solid var(--mist)">'
+            +'<input type="number" class="sc-inp'+(v?' has-val':'')+'" value="'+(v||'')+'" placeholder="—" '
+            +'onchange="dashSetTeamHrs(\''+qtr+'\',\''+mem+'\',\''+row+'\','+wi+',this.value)" '
+            +'oninput="this.className=\'sc-inp\'+(this.value&&+this.value>0?\' has-val\':\'\')">'
+          +'</td>';
+        }).join('')
+      +'</tr>';
+    });
+  });
+  tbody+='</tbody>';
+  teamTbl.innerHTML=thead+tbody;
+}
+
+function dashSetBenWon(qtr,wi,val){
+  if(!dashScorecard[qtr]) return;
+  if(!dashScorecard[qtr].Ben) dashScorecard[qtr].Ben={workWon:new Array(13).fill(0),target:195000};
+  dashScorecard[qtr].Ben.workWon[wi]=parseFloat(val)||0;
+  // Update the progress bar live
+  var ben=dashScorecard[qtr].Ben;
+  var bT=ben.workWon.reduce(function(s,v){return s+(+v||0);},0);
+  var bPct=Math.min(Math.round((bT/ben.target)*100),100);
+  var bEl=document.getElementById('sc-ben-won');
+  if(bEl){
+    var bar=bEl.querySelector('div[style*="width"]');
+    var label=bEl.querySelector('div[style*="remaining"]');
+    if(bar) bar.style.width=bPct+'%';
+    if(label) label.textContent=bPct+'% of quarterly target \u2014 '+dashFmt(ben.target-bT)+' remaining';
+    var valEl=bEl.querySelector('div[style*="font-size:28px"]');
+    if(valEl) valEl.textContent=dashFmt(bT);
+  }
+  syncAutoSave();
+}
+
+function dashSetTeamHrs(qtr,mem,row,wi,val){
+  if(!dashScorecard[qtr]) return;
+  if(!dashScorecard[qtr][mem]) dashScorecard[qtr][mem]={billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)};
+  if(!dashScorecard[qtr][mem][row]) dashScorecard[qtr][mem][row]=new Array(13).fill(0);
+  dashScorecard[qtr][mem][row][wi]=parseFloat(val)||0;
+  syncAutoSave();
+}
+
+// ── Hook into syncBundleData to include dashboard data ─────
+var _origSyncBundleData = syncBundleData;
+syncBundleData = function(){
+  var bundle = _origSyncBundleData.call(this);
+  bundle.data.dashProjects  = dashProjects;
+  bundle.data.dashScorecard = dashScorecard;
+  return bundle;
 };
 
-/* Also: when a project's dateWon/totalFee changes, refresh forecast KPIs */
-/* Projects can set p.dateWon when created — expose a setter */
+// ── Hook into syncApplyData to load dashboard data ─────────
+var _origSyncApplyData = syncApplyData;
+syncApplyData = function(bundle){
+  _origSyncApplyData.call(this, bundle);
+  if(bundle&&bundle.data){
+    if(bundle.data.dashProjects  !== undefined) dashProjects  = bundle.data.dashProjects;
+    if(bundle.data.dashScorecard !== undefined) dashScorecard = bundle.data.dashScorecard;
+  }
+  if(dashSection==='forecast') dashRenderOverview();
+};
+
+// ── Hook into showTab ──────────────────────────────────────
+var _origShowTabForecast = showTab;
+showTab = function(id, btn){
+  _origShowTabForecast.call(this, id, btn);
+  if(id==='forecast'){
+    dashSeedFromProjects();
+    fcShowSection(dashSection||'overview');
+  }
+};
+
+// ── Init ───────────────────────────────────────────────────
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    dashSeedFromProjects();
+  }, 1200);
+});
+
 
 /* ═══════════════════════════════════════
    JSONBIN SYNC MODULE
