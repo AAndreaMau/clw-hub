@@ -560,8 +560,8 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
 
 <div class="sync-bar" id="sync-bar">
   <div class="sync-bar-left">
-    <div class="sync-dot logged-out" id="sync-dot"></div>
-    <span id="sync-status-text">Non connesso — i dati sono locali</span>
+    <div class="sync-dot syncing" id="sync-dot"></div>
+    <span id="sync-status-text">Starting up…</span>
     <span class="sync-avatars" id="sync-avatars"></span>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
@@ -1572,8 +1572,8 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <select class="fc-filter-sel" id="sc-qtr" onchange="fcRenderScorecard()">
-          <option value="Q1-2026">Q1 2026</option>
-          <option value="Q2-2026" selected>Q2 2026</option>
+          <option value="Q1-2026" selected>Q1 2026</option>
+          <option value="Q2-2026">Q2 2026</option>
           <option value="Q3-2026">Q3 2026</option>
           <option value="Q4-2026">Q4 2026</option>
         </select>
@@ -1716,9 +1716,10 @@ function showTab(id,btn){
   document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
-  btn.classList.add('active');
+  if(btn) btn.classList.add('active');
   clearSearch();
-  if(id==='timesheet')initTimesheet();
+  if(id==='timesheet') initTimesheet();
+  if(id==='projects'){ renderProjList(); renderWorkload(); if(!activeProjectId&&projects.length) selectProject(projects[0].id); }
 }
 function toggleChk(el){el.classList.toggle('done');var t=el.nextElementSibling;if(t&&t.classList.contains('chk-text'))t.classList.toggle('done');}
 function toggleAcc(h){var b=h.nextElementSibling,a=h.querySelector('.acc-arrow');b.classList.toggle('open');a.classList.toggle('open');}
@@ -2344,9 +2345,72 @@ function initTsPersonSelector(){
 }
 
 function tsGetWeekRows(){
-  // Rows for this person+week
-  var person=tsGetPerson(),wk=tsWeekKey(tsWeekOffset);
-  return tsRows.filter(function(r){return r.person===person&&r.weekKey===wk;});
+  var person=tsGetPerson(), wk=tsWeekKey(tsWeekOffset);
+  // 1. Return manually-added rows for this person+week
+  var manual = tsRows.filter(function(r){return r.person===person&&r.weekKey===wk;});
+  if(manual.length) return manual;
+
+  // 2. No manual rows — auto-generate from timesheetEntries (Harvest import)
+  if(typeof timesheetEntries==='undefined'||!timesheetEntries.length) return [];
+
+  // Get the date range for this week
+  var days = tsGetWeekDates(tsWeekOffset);
+  var dateSet = {};
+  days.forEach(function(d){ dateSet[tsISODate(d)]=true; });
+
+  // Person alias map
+  var PERSON_ALIAS = {'JE':'JE','Andrea':'Andrea','Adam':'Adam','Ben':'Ben','AL':'AL'};
+
+  // Find all entries for this person in this week
+  var weekEntries = timesheetEntries.filter(function(e){
+    return e.person===person && dateSet[e.date];
+  });
+
+  if(!weekEntries.length) return [];
+
+  // Build unique row keys: project+task combinations
+  var seen = {};
+  var autoRows = [];
+  weekEntries.forEach(function(e){
+    var key = (e.project||'')+'||'+(e.task||'');
+    if(seen[key]) return;
+    seen[key] = true;
+
+    // Find matching project in Hub projects
+    var proj = typeof projects!=='undefined' ?
+      projects.find(function(p){ return p.name===e.project; }) : null;
+
+    var isLeave   = e.isLeave;
+    var isAdmin   = e.isAdmin;
+    var isBillable= e.billable;
+    var rowType   = isLeave?'leave':isAdmin?'admin':'project';
+    var rowId     = 'auto-'+wk+'-'+person+'-'+(autoRows.length);
+    var label     = e.project||(isLeave?'Annual Leave':isAdmin?'Admin':'Unknown');
+    var subLabel  = e.task||'';
+
+    autoRows.push({
+      id:        rowId,
+      weekKey:   wk,
+      person:    person,
+      type:      rowType,
+      projectId: proj ? proj.id : '',
+      taskId:    '',
+      label:     label,
+      subLabel:  subLabel,
+      billable:  isBillable,
+      autoKey:   key  // used to match entries below
+    });
+
+    // Fix up the timesheetEntries so they link to this auto-row
+    timesheetEntries.forEach(function(te){
+      if(te.person===person && dateSet[te.date] &&
+         (te.project||'')===e.project && (te.task||'')===e.task){
+        te.rowId = rowId;
+      }
+    });
+  });
+
+  return autoRows;
 }
 
 function tsMarkUnsaved(){
@@ -2794,10 +2858,7 @@ function roiExport(){
 }
 
 /* ── INIT ── */
-window.addEventListener('load',function(){
-  if(typeof buildFeeUI==='function'){buildFeeUI();setTimeout(function(){toggleStageBlock(0);},50);}
-  renderWorkload();
-});
+// fee UI init moved to main load handler
 // Wire ROI recalc to fee updates
 var _origRecalcAll=recalcAll;
 recalcAll=function(){_origRecalcAll.call(this);roiCalcOnly();};
@@ -3355,7 +3416,7 @@ function l10CopyPrevWeek(){
   l10Render();
   syncAutoSave();
   if (added === 0) alert('All projects from last week are already in this week.');
-  else syncToast('Copiati ' + added + ' progetti dalla settimana precedente');
+  else syncToast('Copied ' + added + ' projects from previous week');
 }
 
 /* ── EXPORT MINUTES ── */
@@ -3485,6 +3546,14 @@ var dashChartOff  = 0;    // chart window offset
 var dashSection   = 'overview'; // current visible section
 
 // ── Quarterly week labels ─────────────────────────────────
+
+// Monday dates for each quarter week slot (for matching timesheetEntries)
+var DASH_QTR_DATES = {
+  'Q1-2026':['2026-01-05','2026-01-12','2026-01-19','2026-01-26','2026-02-02','2026-02-09','2026-02-16','2026-02-23','2026-03-02','2026-03-09','2026-03-16','2026-03-23','2026-03-30'],
+  'Q2-2026':['2026-04-06','2026-04-13','2026-04-20','2026-04-27','2026-05-04','2026-05-11','2026-05-18','2026-05-25','2026-06-01','2026-06-08','2026-06-15','2026-06-22','2026-06-29'],
+  'Q3-2026':['2026-07-06','2026-07-13','2026-07-20','2026-07-27','2026-08-03','2026-08-10','2026-08-17','2026-08-24','2026-08-31','2026-09-07','2026-09-14','2026-09-21','2026-09-28'],
+  'Q4-2026':['2026-10-05','2026-10-12','2026-10-19','2026-10-26','2026-11-02','2026-11-09','2026-11-16','2026-11-23','2026-11-30','2026-12-07','2026-12-14','2026-12-21','2026-12-28']
+};
 var DASH_QTR_WEEKS = {
   'Q1-2026':['5-Jan','12-Jan','19-Jan','26-Jan','2-Feb','9-Feb','16-Feb','23-Feb','2-Mar','9-Mar','16-Mar','23-Mar','30-Mar'],
   'Q2-2026':['6-Apr','13-Apr','20-Apr','27-Apr','4-May','11-May','18-May','25-May','1-Jun','8-Jun','15-Jun','22-Jun','29-Jun'],
@@ -3855,20 +3924,79 @@ function dashPromote(id){
 
 // ── SCORECARD ──────────────────────────────────────────────
 function fcRenderScorecard(){
-  var qtr=(document.getElementById('sc-qtr')||{}).value||'Q2-2026';
+  var qtr=(document.getElementById('sc-qtr')||{}).value||'Q1-2026';
   var weeks=DASH_QTR_WEEKS[qtr]||[];
   if(!dashScorecard[qtr]) dashScorecard[qtr]={
     Ben:{workWon:new Array(13).fill(0),target:195000},
     Adam:{billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)},
     Johnny:{billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)},
-    Andrea:{billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)}
+    Andrea:{billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)},
   };
-  var qd=dashScorecard[qtr];
-  var ben=qd.Ben||{workWon:new Array(13).fill(0),target:195000};
-  var bT=ben.workWon.reduce(function(s,v){return s+(+v||0);},0);
-  var bTgt=ben.target||195000;
-  var bPct=Math.min(Math.round((bT/bTgt)*100),100);
-  var barCol=bPct>=100?'var(--teal)':bPct>=75?'var(--amber)':'var(--navy)';
+
+  // ── Compute live from timesheetEntries ─────────────────────
+  // Get the Monday dates for each week slot in this quarter
+  var weekDates = (DASH_QTR_DATES&&DASH_QTR_DATES[qtr]) ? DASH_QTR_DATES[qtr] : [];
+
+  // PERSON map: timesheet person name → scorecard key
+  var PERSON_SC = {'Adam':'Adam','Andrea':'Andrea','JE':'Johnny','Ben':'Ben','AL':'Andrea'};
+
+  // Compute from timesheetEntries if available
+  var computed = {
+    Ben:    {workWon:new Array(13).fill(0), target: dashScorecard[qtr].Ben&&dashScorecard[qtr].Ben.target||195000},
+    Adam:   {billable:new Array(13).fill(0), holiday:new Array(13).fill(0), sick:new Array(13).fill(0)},
+    Johnny: {billable:new Array(13).fill(0), holiday:new Array(13).fill(0), sick:new Array(13).fill(0)},
+    Andrea: {billable:new Array(13).fill(0), holiday:new Array(13).fill(0), sick:new Array(13).fill(0)},
+  };
+
+  // Copy Ben's manually-entered work won (not in time report)
+  var benManual = dashScorecard[qtr].Ben&&dashScorecard[qtr].Ben.workWon;
+  if(benManual) computed.Ben.workWon = benManual.slice();
+
+  if(typeof timesheetEntries!=='undefined' && timesheetEntries.length && weekDates.length){
+    timesheetEntries.forEach(function(e){
+      if(!e.date || !e.person) return;
+      var scPerson = PERSON_SC[e.person];
+      if(!scPerson || scPerson==='Ben') return; // Ben is work-won only
+      var target = computed[scPerson];
+      if(!target) return;
+
+      // Find which week slot this date falls in
+      var wi = -1;
+      for(var i=0; i<weekDates.length; i++){
+        var wStart = new Date(weekDates[i]);
+        var wEnd   = new Date(wStart); wEnd.setDate(wEnd.getDate()+6);
+        var d      = new Date(e.date);
+        if(d>=wStart && d<=wEnd){ wi=i; break; }
+      }
+      if(wi<0) return;
+
+      var hrs = parseFloat(e.hrs)||0;
+      if(e.isLeave){
+        target.holiday[wi] = Math.round((target.holiday[wi]||0) + hrs/8*10)/10;
+      } else if(e.isSick){
+        target.sick[wi]    = Math.round((target.sick[wi]||0)    + hrs/8*10)/10;
+      } else if(e.billable){
+        target.billable[wi]= Math.round((target.billable[wi]||0)+ hrs*10)/10;
+      }
+    });
+  } else {
+    // Fall back to stored dashScorecard values
+    var stored = dashScorecard[qtr];
+    ['Adam','Johnny','Andrea'].forEach(function(p){
+      if(stored[p]){
+        ['billable','holiday','sick'].forEach(function(k){
+          if(stored[p][k]) computed[p][k] = stored[p][k].slice();
+        });
+      }
+    });
+  }
+
+  var qd = computed;
+  var ben = qd.Ben;
+  var bT  = ben.workWon.reduce(function(s,v){return s+(+v||0);},0);
+  var bTgt= ben.target||195000;
+  var bPct= Math.min(Math.round((bT/bTgt)*100),100);
+  var barCol= bPct>=100?'var(--teal)':bPct>=75?'var(--amber)':'var(--navy)';
 
   // Ben won summary
   var benEl=document.getElementById('sc-ben-won');
@@ -3890,17 +4018,17 @@ function fcRenderScorecard(){
   var rowEl=document.getElementById('sc-ben-row');
   if(headEl) headEl.innerHTML='<th style="padding:7px 10px;text-align:left;font-family:var(--ff);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist)">Week</th>'
     +weeks.map(function(w){return '<th style="padding:7px 6px;text-align:center;font-family:var(--ff);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist)">'+w+'</th>';}).join('');
-  if(rowEl) rowEl.innerHTML='<td style="padding:7px 10px;font-weight:700;font-family:var(--ff);font-size:11px">Work Won (£)</td>'
+  if(rowEl) rowEl.innerHTML='<td style="padding:7px 10px;font-weight:700;font-family:var(--ff);font-size:11px">Work Won (\u00a3)</td>'
     +weeks.map(function(w,wi){
       var v=ben.workWon[wi]||0;
       return '<td style="padding:4px 4px;text-align:center">'
-        +'<input type="number" class="sc-inp'+(v?' has-val':'')+'" value="'+(v||'')+'" placeholder="—" '
+        +'<input type="number" class="sc-inp'+(v?' has-val':'')+'" value="'+(v||'')+'" placeholder="\u2014" '
         +'onchange="dashSetBenWon(\''+qtr+'\','+wi+',this.value)" '
         +'oninput="this.className=\'sc-inp\'+(this.value&&+this.value>0?\' has-val\':\'\')">'
       +'</td>';
     }).join('');
 
-  // Team billable hours
+  // Team billable hours — computed live
   var teamTbl=document.getElementById('sc-team-table');
   if(!teamTbl) return;
   var members=['Adam','Johnny','Andrea'];
@@ -3908,8 +4036,11 @@ function fcRenderScorecard(){
   var rowLabels={billable:'Billable Hours',holiday:'Holiday (days)',sick:'Sick (days)'};
   var rowCols={billable:'var(--teal)',holiday:'var(--amber)',sick:'var(--red)'};
 
-  var thead='<thead><tr><th style="padding:7px 10px;text-align:left;font-family:var(--ff);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist)">Person / Metric</th>'
-    +weeks.map(function(w){return '<th style="padding:7px 6px;text-align:center;font-family:var(--ff);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist)">'+w+'</th>';}).join('')
+  var thead='<thead><tr><th style="padding:7px 10px;text-align:left;font-family:var(--ff);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist);white-space:nowrap">Person / Metric</th>'
+    +weeks.map(function(w){
+      return '<th style="padding:7px 6px;text-align:center;font-family:var(--ff);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist)">'+w+'</th>';
+    }).join('')
+    +'<th style="padding:7px 10px;text-align:right;font-family:var(--ff);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--mist)">Q Total</th>'
   +'</tr></thead>';
 
   var tbody='<tbody>';
@@ -3917,25 +4048,34 @@ function fcRenderScorecard(){
     var md=qd[mem]||{billable:new Array(13).fill(0),holiday:new Array(13).fill(0),sick:new Array(13).fill(0)};
     var memCol=DASH_MGR_COL[mem]||'var(--slate)';
     rows.forEach(function(row,ri){
-      tbody+='<tr>'
+      var qTotal = md[row] ? md[row].reduce(function(a,v){return a+(+v||0);},0) : 0;
+      var hasData = qTotal > 0;
+      tbody+='<tr style="'+(ri===0?'':'border-top:none')+'">'
         +'<td style="padding:7px 10px;border-bottom:0.5px solid var(--mist);white-space:nowrap">'
           +(ri===0?'<span class="mgr-dot" style="background:'+memCol+'"></span><strong style="font-size:11px">'+mem+'</strong> &mdash; ':'<span style="display:inline-block;width:11px"></span>')
           +'<span style="font-size:10px;color:'+rowCols[row]+';font-weight:600">'+rowLabels[row]+'</span>'
         +'</td>'
         +weeks.map(function(w,wi){
           var v=(md[row]&&md[row][wi])||0;
+          var isComputed = typeof timesheetEntries!=='undefined' && timesheetEntries.length > 0;
+          if(isComputed){
+            // Read-only display of computed values
+            return '<td style="padding:3px 4px;text-align:center;border-bottom:0.5px solid var(--mist);font-size:11px;font-family:var(--fb);color:'+(v>0?rowCols[row]:'var(--mist)')+'">'+(v>0?v:'&mdash;')+'</td>';
+          }
           return '<td style="padding:3px 4px;text-align:center;border-bottom:0.5px solid var(--mist)">'
-            +'<input type="number" class="sc-inp'+(v?' has-val':'')+'" value="'+(v||'')+'" placeholder="—" '
+            +'<input type="number" class="sc-inp'+(v?' has-val':'')+'" value="'+(v||'')+'" placeholder="\u2014" '
             +'onchange="dashSetTeamHrs(\''+qtr+'\',\''+mem+'\',\''+row+'\','+wi+',this.value)" '
             +'oninput="this.className=\'sc-inp\'+(this.value&&+this.value>0?\' has-val\':\'\')">'
           +'</td>';
         }).join('')
+        +'<td style="padding:7px 10px;text-align:right;border-bottom:0.5px solid var(--mist);font-size:11px;font-weight:700;color:'+(hasData?rowCols[row]:'var(--mist)')+'">'+(hasData?Math.round(qTotal*10)/10:'&mdash;')+'</td>'
       +'</tr>';
     });
   });
   tbody+='</tbody>';
   teamTbl.innerHTML=thead+tbody;
 }
+
 
 function dashSetBenWon(qtr,wi,val){
   if(!dashScorecard[qtr]) return;
@@ -3996,11 +4136,7 @@ showTab = function(id, btn){
 };
 
 // ── Init ───────────────────────────────────────────────────
-window.addEventListener('load', function(){
-  setTimeout(function(){
-    dashSeedFromProjects();
-  }, 1200);
-});
+// dashSeedFromProjects called from showTab
 
 
 /* ═══════════════════════════════════════
@@ -4047,57 +4183,63 @@ async function jbCreateBin(bundle) {
 /* ── Load data from JSONBin ── */
 async function jbLoad() {
   syncIsLoading = true;
-  syncSetStatus('syncing', 'Caricamento dati...');
+  syncSetStatus('syncing', 'Loading data…');
   try {
     var resp = await fetch(JB_BASE + '/b/' + JB_BIN_ID + '/latest', {
       headers: { 'X-Master-Key': JB_KEY }
     });
-    if (!resp.ok) throw new Error('Load failed: ' + resp.status);
+    if (!resp.ok) throw new Error(resp.status);
     var data = await resp.json();
     var bundle = data.record;
+    if (!bundle || !bundle.data) throw new Error('No data in bundle');
 
-    // Only apply remote data if it has MORE projects than what we already have
-    // This prevents an empty/stale JSONBin from wiping the embedded Harvest data
-    var remoteProjects = (bundle && bundle.data && bundle.data.projects) ? bundle.data.projects : [];
-    var localProjects  = typeof projects !== 'undefined' ? projects : [];
+    var remote = bundle.data;
+    var remoteCount = (remote.projects||[]).length;
+    var localCount  = (typeof projects !== 'undefined' ? projects : []).length;
+    var remoteVer   = parseInt(bundle.version||0);
+    var remoteBy    = bundle.savedBy||'';
 
-    if (remoteProjects.length >= localProjects.length && bundle.savedBy !== 'Harvest Import') {
+    // Only replace local data with remote if:
+    // - remote has MORE projects (team member added one), OR
+    // - remote was saved by a real user (not an import script) AND has same count
+    var useRemote = (remoteCount > localCount) ||
+                    (remoteCount === localCount && remoteBy && 
+                     remoteBy !== 'Harvest Import' && remoteBy !== 'unknown');
+
+    if (useRemote) {
       syncApplyData(bundle);
-    } else if (remoteProjects.length === 0 && localProjects.length > 0) {
-      // Remote is empty — push local data up to JSONBin
-      syncSetStatus('syncing', 'Primo avvio — caricamento dati Harvest...');
+    } else if (remoteCount === 0) {
+      // Remote empty — push our rich local data up
       syncIsLoading = false;
       await syncSave();
+      syncSetStatus('connected', 'Connected as ' + (syncCurrentUser||'team'));
       return true;
-    } else if (bundle && bundle.savedBy === 'Harvest Import') {
-      // Remote has only the initial import — apply it
-      syncApplyData(bundle);
     }
+    // else keep local data intact
 
-    if (bundle && bundle.savedAt) {
+    if (bundle.savedAt) {
       var dt = new Date(bundle.savedAt);
       var by = bundle.savedBy ? ' da ' + bundle.savedBy.split(' ')[0] : '';
       var el = document.getElementById('sync-last-saved');
-      if (el) el.textContent = 'Ultimo salvataggio: ' + dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) + by;
+      if (el) el.textContent = 'Saved: ' + dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) + by;
     }
-    syncSetStatus('connected', 'Connesso' + (syncCurrentUser ? ' come ' + syncCurrentUser : ''));
+    syncSetStatus('connected', 'Connected' + (syncCurrentUser ? ' come ' + syncCurrentUser : ''));
     syncIsLoading = false;
     return true;
   } catch(e) {
-    console.error('Load error:', e);
-    syncSetStatus('connected', 'Dati locali — salva per sincronizzare');
+    console.warn('jbLoad:', e.message);
+    syncSetStatus('connected', 'Local data — save to sync');
     syncIsLoading = false;
     return false;
   }
 }
 
-/* ── Save data to JSONBin ── */
 async function syncSave() {
   if (syncIsSaving) return;
   syncIsSaving = true;
   var saveBtn = document.getElementById('sync-save-btn');
   if (saveBtn) { saveBtn.textContent = '⏳ Salvando...'; saveBtn.disabled = true; }
-  syncSetStatus('syncing', 'Salvataggio in corso...');
+  syncSetStatus('syncing', 'Saving…');
   try {
     var bundle = syncBundleData();
     var binId = await jbGetBinId();
@@ -4119,13 +4261,13 @@ async function syncSave() {
     syncLastSaved = new Date();
     var timeStr = syncLastSaved.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
     var name = syncCurrentUser || 'tu';
-    document.getElementById('sync-last-saved').textContent = 'Salvato alle ' + timeStr + ' da ' + name;
-    syncSetStatus('connected', 'Connesso' + (syncCurrentUser ? ' come ' + syncCurrentUser : ''));
-    if (saveBtn) { saveBtn.textContent = '✓ Salvato'; saveBtn.disabled = false; }
+    document.getElementById('sync-last-saved').textContent = 'Saved at ' + timeStr + ' da ' + name;
+    syncSetStatus('connected', 'Connected' + (syncCurrentUser ? ' come ' + syncCurrentUser : ''));
+    if (saveBtn) { saveBtn.textContent = '✓ Saved'; saveBtn.disabled = false; }
     setTimeout(function(){ if(saveBtn){ saveBtn.textContent = '↑ Salva ora'; saveBtn.style.color=''; saveBtn.style.borderColor=''; }}, 2000);
   } catch(e) {
     console.error('Save error:', e);
-    syncSetStatus('offline', 'Errore salvataggio: ' + e.message);
+    syncSetStatus('offline', 'Save error: ' + e.message);
     if (saveBtn) { saveBtn.textContent = '↑ Salva ora'; saveBtn.disabled = false; }
     alert('Errore nel salvataggio:\n\n' + e.message);
   }
@@ -4151,10 +4293,10 @@ async function syncPoll() {
         if (serverUser !== myName) {
           syncApplyData(bundle);
           syncLastSaved = serverTime;
-          syncToast('📥 Dati aggiornati da ' + serverUser.split(' ')[0]);
+          syncToast('📥 Data updated by ' + serverUser.split(' ')[0]);
           var by = serverUser ? ' da ' + serverUser.split(' ')[0] : '';
           document.getElementById('sync-last-saved').textContent =
-            'Aggiornato alle ' + serverTime.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) + by;
+            'Updated at ' + serverTime.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) + by;
         }
       }
     }
@@ -4164,20 +4306,38 @@ async function syncPoll() {
 /* ── Name picker for this user ── */
 function syncPickUser() {
   var saved = localStorage.getItem('clw-hub-user');
-  if (saved) { syncCurrentUser = saved; return; }
+  if (saved) {
+    syncCurrentUser = saved;
+    syncSetStatus('connected', 'Connected as ' + saved + ' — syncing…');
+    return;
+  }
   var names = ['Andrea','Ben','Johnny','Adam','AL'];
-  var html = '<div class="form-row full"><div class="form-group"><label class="form-label">Chi sei?</label>'
-    +'<select class="form-input" id="m-username">'
-    + names.map(function(n){return '<option>'+n+'</option>';}).join('')
-    +'</select></div></div>';
-  showModal('Benvenuto nel CLW Hub', html, function(){
-    var sel = document.getElementById('m-username');
-    syncCurrentUser = sel ? sel.value : 'Team';
-    localStorage.setItem('clw-hub-user', syncCurrentUser);
-    document.getElementById('sync-status-text').textContent = 'Connesso come ' + syncCurrentUser;
-    syncSetStatus('connected', 'Connesso come ' + syncCurrentUser);
-    return true;
-  }, 'Entra');
+  var html = '<div class="form-row full"><div class="form-group">'
+    +'<label class="form-label" style="font-size:14px;margin-bottom:12px">Who are you?</label>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +names.map(function(n){
+      return '<button onclick="syncSetUser(\''+n+'\')" style="padding:14px;border:2px solid var(--border);border-radius:8px;background:var(--white);cursor:pointer;font-family:var(--ff);font-size:13px;font-weight:600;color:var(--ink);transition:all .15s" onmouseover="this.style.borderColor=\'var(--gold)\';this.style.background=\'var(--gold-l)\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.background=\'var(--white)\'">'+n+'</button>';
+    }).join('')
+    +'</div>'
+    +'</div></div>';
+  showModal('Welcome to CLW Hub', html, function(){ return !!syncCurrentUser; }, '');
+  // Hide the confirm button — selection happens via the name buttons
+  setTimeout(function(){
+    var confirmBtn = document.querySelector('.modal-confirm');
+    if(confirmBtn) confirmBtn.style.display='none';
+  },50);
+}
+
+function syncSetUser(name) {
+  syncCurrentUser = name;
+  localStorage.setItem('clw-hub-user', name);
+  syncSetStatus('connected', 'Connected as ' + name + ' — syncing…');
+  closeModal();
+  setTimeout(async function(){
+    await jbLoad();
+    if(syncPollTimer) clearInterval(syncPollTimer);
+    syncPollTimer = setInterval(syncPoll, 30000);
+  }, 200);
 }
 
 /* ── Bundle all app data ── */
@@ -4223,7 +4383,7 @@ function syncApplyData(bundle) {
 /* ── Auto-save after changes (3s debounce) ── */
 function syncAutoSave() {
   var btn = document.getElementById('sync-save-btn');
-  if (btn) { btn.textContent = '● Non salvato'; btn.style.color='#fcd34d'; btn.style.borderColor='#fcd34d'; }
+  if (btn) { btn.textContent = '● Unsaved changes'; btn.style.color='#fcd34d'; btn.style.borderColor='#fcd34d'; }
   if (syncAutoSave._timer) clearTimeout(syncAutoSave._timer);
   syncAutoSave._timer = setTimeout(function(){ syncSave(); }, 3000);
 }
@@ -4260,27 +4420,32 @@ document.addEventListener('keydown', function(e){
 
 /* ── Init on load ── */
 window.addEventListener('load', function(){
-  // Render immediately with embedded data — don't wait for sync
+  // ── 1. Render immediately from embedded data ──────────────
   if(typeof renderProjList==='function'){ renderProjList(); renderWorkload(); }
   if(typeof l10Render==='function') l10Render();
-  if(typeof fcRenderKPIs==='function') fcRenderKPIs();
+  if(typeof buildFeeUI==='function'){ buildFeeUI(); setTimeout(function(){toggleStageBlock(0);},50); }
+  setTimeout(function(){
+    if(typeof projects!=='undefined'&&projects.length&&!activeProjectId)
+      if(typeof selectProject==='function') selectProject(projects[0].id);
+  }, 150);
 
+  // ── 2. Show buttons immediately ────────────────────────────
+  var loginBtn=document.getElementById('sync-login-btn');
+  var saveBtn=document.getElementById('sync-save-btn');
+  if(loginBtn) loginBtn.style.display='none';
+  if(saveBtn)  saveBtn.style.display='block';
+
+  // ── 3. Sync init ───────────────────────────────────────────
   setTimeout(async function(){
-    // Show save button, hide login
-    document.getElementById('sync-login-btn').style.display = 'none';
-    document.getElementById('sync-save-btn').style.display = 'block';
-
-    // Pick user
     syncPickUser();
-
-    // Load from JSONBin (won't overwrite if local has more data)
-    await jbLoad();
-
-    // Start polling every 30s
-    if (syncPollTimer) clearInterval(syncPollTimer);
-    syncPollTimer = setInterval(syncPoll, 30000);
-
-  }, 600);
+    if(syncCurrentUser){
+      syncSetStatus('syncing','Loading shared data…');
+      await jbLoad();
+      if(syncPollTimer) clearInterval(syncPollTimer);
+      syncPollTimer = setInterval(syncPoll, 30000);
+    }
+    // If no user yet (modal shown), syncSetUser() handles the rest
+  }, 700);
 });
 
 </script>
