@@ -59,13 +59,11 @@ body{background:var(--bg);font-family:var(--fb);color:var(--ink);font-size:14px;
 .stat .v{font-family:var(--ff);font-size:20px;font-weight:700;color:var(--ink)}
 .stat .l{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
 .checklist{list-style:none}
-.checklist li{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px;line-height:1.4}
+.checklist li{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px;line-height:1.5;color:var(--ink2)}
 .checklist li:last-child{border-bottom:none}
-.chk{width:16px;height:16px;min-width:16px;border:1.5px solid var(--border);border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;margin-top:1px;flex-shrink:0}
-.chk.done{background:var(--teal);border-color:var(--teal)}
-.chk.done::after{content:'✓';font-size:10px;color:#fff;font-weight:700}
+.chk{display:none}
 .chk-text{flex:1}
-.chk-text.done{text-decoration:line-through;color:var(--ink3)}
+.checklist li::before{content:'›';color:var(--gold);font-weight:700;font-size:15px;flex-shrink:0;margin-top:0px;line-height:1.4}
 .chk-badge{font-size:9px;padding:2px 7px;border-radius:10px;font-weight:600;margin-left:auto;white-space:nowrap;align-self:flex-start;margin-top:2px}
 .badge-req{background:var(--red-l);color:var(--red)}
 .badge-dir{background:var(--blue-l);color:var(--blue)}
@@ -867,31 +865,31 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
     <div class="card"><div class="card-title">Stage 0 &mdash; Familiarisation</div><div class="card-sub">Establish informed baseline understanding of site, existing conditions, and any historic/current waterproofing strategy</div>
     <div class="section-label" style="margin-top:8px">9.1.1 Brief Site Visit — Pre-Attendance Checks</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Confirm meeting location, access arrangements and site induction requirements</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Confirm required PPE</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Confirm no asbestos removal or disturbance works are ongoing</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Confirm meeting agenda has been issued</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Confirm list of attendees and their roles</span></li>
+      <li><span class="chk-text">Confirm meeting location, access arrangements and site induction requirements</span></li>
+      <li><span class="chk-text">Confirm required PPE</span></li>
+      <li><span class="chk-text">Confirm no asbestos removal or disturbance works are ongoing</span></li>
+      <li><span class="chk-text">Confirm meeting agenda has been issued</span></li>
+      <li><span class="chk-text">Confirm list of attendees and their roles</span></li>
     </ul>
     <div style="padding:8px 12px;background:var(--bg2);border-radius:6px;font-size:12px;color:var(--ink3);margin:8px 0">On site: visual non-intrusive inspection only &middot; Identify waterproofing measures, defects, constraints &middot; Take representative photographs where permitted. No intrusive works. No supervision of site activities.</div>
     <div class="section-label">9.1.2 Desktop Study</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Architectural drawings and specifications</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Structural drawings and calculations (where available)</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Site investigation and geotechnical reports</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Existing waterproofing drawings, details, or reports</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Historic maintenance or defect information</span></li>
+      <li><span class="chk-text">Architectural drawings and specifications</span></li>
+      <li><span class="chk-text">Structural drawings and calculations (where available)</span></li>
+      <li><span class="chk-text">Site investigation and geotechnical reports</span></li>
+      <li><span class="chk-text">Existing waterproofing drawings, details, or reports</span></li>
+      <li><span class="chk-text">Historic maintenance or defect information</span></li>
     </ul>
     <div class="section-label">9.1.3 RFI &amp; 9.1.4 Initial Assessment</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Issue formal RFI where information is missing, unclear or contradictory</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Record assumptions clearly if information cannot be obtained</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Attempt to identify as-built waterproofing design</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">High-level assessment of apparent waterproofing performance</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">High-level commentary on observed risks and limitations</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Contribute to defining scope of any proposed intrusive investigations</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Review any existing or proposed waterproofing strategy</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Prepare high-level options and appraisal where requested</span></li>
+      <li><span class="chk-text">Issue formal RFI where information is missing, unclear or contradictory</span></li>
+      <li><span class="chk-text">Record assumptions clearly if information cannot be obtained</span></li>
+      <li><span class="chk-text">Attempt to identify as-built waterproofing design</span></li>
+      <li><span class="chk-text">High-level assessment of apparent waterproofing performance</span></li>
+      <li><span class="chk-text">High-level commentary on observed risks and limitations</span></li>
+      <li><span class="chk-text">Contribute to defining scope of any proposed intrusive investigations</span></li>
+      <li><span class="chk-text">Review any existing or proposed waterproofing strategy</span></li>
+      <li><span class="chk-text">Prepare high-level options and appraisal where requested</span></li>
     </ul>
     <div style="margin-top:10px;padding:8px 12px;background:var(--teal-l);border-radius:6px;font-size:12px;color:var(--teal)"><b>Typical Output:</b> High-Level Waterproofing Report (advisory)</div>
     </div>
@@ -901,27 +899,27 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
     <div class="card"><div class="card-title">Stage 2 &mdash; Concept Design</div><div class="card-sub">Establish appropriate waterproofing strategy aligned with project risk, use and performance expectations</div>
     <div class="section-label" style="margin-top:8px">9.2.1 Design Information Review</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Review architectural concept proposals</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Review structural design principles</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Review geotechnical and groundwater information</span></li>
+      <li><span class="chk-text">Review architectural concept proposals</span></li>
+      <li><span class="chk-text">Review structural design principles</span></li>
+      <li><span class="chk-text">Review geotechnical and groundwater information</span></li>
     </ul>
     <div class="section-label">9.2.2 Performance Definition</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Identify required waterproofing performance grades per BS 8102</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Consider use, occupancy and tolerance to moisture ingress</span></li>
+      <li><span class="chk-text">Identify required waterproofing performance grades per BS 8102</span></li>
+      <li><span class="chk-text">Consider use, occupancy and tolerance to moisture ingress</span></li>
     </ul>
     <div class="section-label">9.2.3 Risk Assessment</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Groundwater levels and variability</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Soil conditions and hydrostatic risk</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Structural form and buildability</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Consequence of failure</span></li>
+      <li><span class="chk-text">Groundwater levels and variability</span></li>
+      <li><span class="chk-text">Soil conditions and hydrostatic risk</span></li>
+      <li><span class="chk-text">Structural form and buildability</span></li>
+      <li><span class="chk-text">Consequence of failure</span></li>
     </ul>
     <div class="section-label">9.2.4 Strategy Development</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Advise on appropriate waterproofing approach (Type A, B, C, or combined)</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Identify key interfaces with structure and external envelope</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Highlight areas of elevated risk requiring further development</span></li>
+      <li><span class="chk-text">Advise on appropriate waterproofing approach (Type A, B, C, or combined)</span></li>
+      <li><span class="chk-text">Identify key interfaces with structure and external envelope</span></li>
+      <li><span class="chk-text">Highlight areas of elevated risk requiring further development</span></li>
     </ul>
     <div style="margin-top:10px;padding:8px 12px;background:var(--teal-l);border-radius:6px;font-size:12px;color:var(--teal)"><b>Outputs:</b> Stage 2 Waterproofing Design Report &middot; Meeting attendance &middot; Pre-purchase/pre-planning feasibility input &middot; Input to outline specifications and cost plan assumptions</div>
     </div>
@@ -931,32 +929,32 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
     <div class="card"><div class="card-title">Stage 3 &mdash; Spatial Coordination</div><div class="card-sub">Spatially coordinate the waterproofing strategy and reduce construction and interface risk</div>
     <div class="section-label" style="margin-top:8px">9.3.1 Detailed Risk Assessment</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Drainage strategy review</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Hydrostatic pressures assessment</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Construction tolerances and defects allowance</span></li>
+      <li><span class="chk-text">Drainage strategy review</span></li>
+      <li><span class="chk-text">Hydrostatic pressures assessment</span></li>
+      <li><span class="chk-text">Construction tolerances and defects allowance</span></li>
     </ul>
     <div class="section-label">9.3.2 Design Review &amp; 9.3.3 Coordination</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Review and comment on architectural and structural drawings</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Identify clashes, omissions and continuity risks</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Coordinate with the wider design team</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Contribute to coordinated draft performance specification</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Review early value-engineering proposals for risk impact</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Provide advisory comments on sequencing and allowances</span></li>
+      <li><span class="chk-text">Review and comment on architectural and structural drawings</span></li>
+      <li><span class="chk-text">Identify clashes, omissions and continuity risks</span></li>
+      <li><span class="chk-text">Coordinate with the wider design team</span></li>
+      <li><span class="chk-text">Contribute to coordinated draft performance specification</span></li>
+      <li><span class="chk-text">Review early value-engineering proposals for risk impact</span></li>
+      <li><span class="chk-text">Provide advisory comments on sequencing and allowances</span></li>
     </ul>
     <div class="section-label">Drawings Included in Stage 3 Pack</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Site conceptual model</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Required grades of waterproofing performance</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Indicative waterproofing strategy</span></li>
+      <li><span class="chk-text">Site conceptual model</span></li>
+      <li><span class="chk-text">Required grades of waterproofing performance</span></li>
+      <li><span class="chk-text">Indicative waterproofing strategy</span></li>
     </ul>
     <div class="section-label">Design Philosophy Report — Contents</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Site conceptual model</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Waterproofing risk assessment</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Required grades of waterproofing performance</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Outline waterproofing strategy</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Draft performance specification</span></li>
+      <li><span class="chk-text">Site conceptual model</span></li>
+      <li><span class="chk-text">Waterproofing risk assessment</span></li>
+      <li><span class="chk-text">Required grades of waterproofing performance</span></li>
+      <li><span class="chk-text">Outline waterproofing strategy</span></li>
+      <li><span class="chk-text">Draft performance specification</span></li>
     </ul>
     <div style="margin-top:10px;padding:8px 12px;background:var(--teal-l);border-radius:6px;font-size:12px;color:var(--teal)"><b>Output:</b> Stage 3 Waterproofing Design Philosophy Pack</div>
     </div>
@@ -966,15 +964,15 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
     <div class="card"><div class="card-title">Stage 4a &mdash; Outline Design</div><div class="card-sub">Translate the agreed strategy into coordinated outline design information</div>
     <div class="section-label" style="margin-top:8px">9.4.1 Design Development</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Develop the coordinated Stage 3 waterproofing information</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Prepare waterproofing layout and key detail sheets</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Develop movement joint principles where required</span></li>
+      <li><span class="chk-text">Develop the coordinated Stage 3 waterproofing information</span></li>
+      <li><span class="chk-text">Prepare waterproofing layout and key detail sheets</span></li>
+      <li><span class="chk-text">Develop movement joint principles where required</span></li>
     </ul>
     <div class="section-label">9.4.2 Specification &amp; 9.4.3 Engagement</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Contribute to the coordinated waterproofing performance specification</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Review early contractor value-engineering proposals</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Attend and contribute to technical workshop with the contractor (where appointed)</span></li>
+      <li><span class="chk-text">Contribute to the coordinated waterproofing performance specification</span></li>
+      <li><span class="chk-text">Review early contractor value-engineering proposals</span></li>
+      <li><span class="chk-text">Attend and contribute to technical workshop with the contractor (where appointed)</span></li>
     </ul>
     </div>
   </div>
@@ -983,15 +981,15 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
     <div class="card"><div class="card-title">Stage 4b &mdash; Technical Design</div><div class="card-sub">Verify compliance of specialist proposals with the agreed waterproofing strategy</div>
     <div class="section-label" style="margin-top:8px">9.5.1 Contractor Proposal Review</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Review specialist waterproofing contractor / subcontractor proposals</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Respond to technical queries relating to BS 8102 compliance</span></li>
+      <li><span class="chk-text">Review specialist waterproofing contractor / subcontractor proposals</span></li>
+      <li><span class="chk-text">Respond to technical queries relating to BS 8102 compliance</span></li>
     </ul>
     <div class="section-label">9.5.2 Design Compliance &amp; 9.5.3 Third-Party</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Review IFC drawings for alignment with the agreed strategy</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Issue Stage 4 Waterproofing Sign-Off (design compliance only)</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Support Building Control and Warranty Provider technical reviews</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Participate in interviews / technical evaluation of waterproofing subcontractors</span></li>
+      <li><span class="chk-text">Review IFC drawings for alignment with the agreed strategy</span></li>
+      <li><span class="chk-text">Issue Stage 4 Waterproofing Sign-Off (design compliance only)</span></li>
+      <li><span class="chk-text">Support Building Control and Warranty Provider technical reviews</span></li>
+      <li><span class="chk-text">Participate in interviews / technical evaluation of waterproofing subcontractors</span></li>
     </ul>
     <div style="margin-top:10px;padding:8px 12px;background:var(--teal-l);border-radius:6px;font-size:12px;color:var(--teal)"><b>Output:</b> Stage 4 Waterproofing Sign-Off (design compliance only)</div>
     </div>
@@ -1001,24 +999,24 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
     <div class="card"><div class="card-title">Stage 5 &mdash; Construction Phase Support</div><div class="card-sub">Provide proportionate advisory support during construction</div>
     <div class="section-label" style="margin-top:8px">9.6.1 Site Attendance</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Attendance at key milestone inspections (as agreed)</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Preparation of photographic records and visit reports</span></li>
+      <li><span class="chk-text">Attendance at key milestone inspections (as agreed)</span></li>
+      <li><span class="chk-text">Preparation of photographic records and visit reports</span></li>
     </ul>
     <div class="section-label">9.6.2 Advisory Role</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Provide high-level, non-supervisory comments</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Review contractor proposals for sequencing, protection and penetrations</span></li>
+      <li><span class="chk-text">Provide high-level, non-supervisory comments</span></li>
+      <li><span class="chk-text">Review contractor proposals for sequencing, protection and penetrations</span></li>
     </ul>
     <div class="section-label">9.6.3 Completion Activities</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Final site visit (where applicable)</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Issue Post-Installation Advisory Note</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Review Operation &amp; Maintenance (O&amp;M) information</span></li>
+      <li><span class="chk-text">Final site visit (where applicable)</span></li>
+      <li><span class="chk-text">Issue Post-Installation Advisory Note</span></li>
+      <li><span class="chk-text">Review Operation &amp; Maintenance (O&amp;M) information</span></li>
     </ul>
     <div class="section-label">9.6.4 CMT (if appointed)</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Monthly enhanced construction monitoring</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Issue Release Note confirming no further inspections required</span></li>
+      <li><span class="chk-text">Monthly enhanced construction monitoring</span></li>
+      <li><span class="chk-text">Issue Release Note confirming no further inspections required</span></li>
     </ul>
     <div style="margin-top:10px;padding:8px 12px;background:var(--teal-l);border-radius:6px;font-size:12px;color:var(--teal)"><b>Outputs:</b> Visit reports &middot; Post-Installation Advisory Note &middot; CMT Release Note (if applicable)</div>
     </div>
@@ -1028,9 +1026,9 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
     <div class="card"><div class="card-title">Stage 6 &mdash; In-Use / Post-Completion Review</div><div class="card-sub">Provide limited post-completion advisory input where issues arise</div>
     <div style="padding:8px 12px;background:var(--amber-l);border-radius:6px;font-size:12px;color:var(--amber);margin:10px 0">Services at this stage are strictly subject to additional instruction and fee agreement.</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Review of reported defects or performance concerns</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Advisory input on remedial strategies</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Support with warranty or insurance technical queries</span></li>
+      <li><span class="chk-text">Review of reported defects or performance concerns</span></li>
+      <li><span class="chk-text">Advisory input on remedial strategies</span></li>
+      <li><span class="chk-text">Support with warranty or insurance technical queries</span></li>
     </ul>
     </div>
   </div>
@@ -1039,26 +1037,26 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
     <div class="card"><div class="card-title">Stage 7 &mdash; Project Completion &amp; Close-Out</div><div class="card-sub">External completion and internal QA close-out</div>
     <div class="section-label" style="margin-top:8px">9.8.1 Completion of Services (External)</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Issue final reports, verification notes or advisory outputs (where included in appointment)</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Close out all outstanding technical queries relating to agreed scope</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Confirm completion of services in writing to the client</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Issue final invoice in accordance with agreed fee terms</span></li>
+      <li><span class="chk-text">Issue final reports, verification notes or advisory outputs (where included in appointment)</span></li>
+      <li><span class="chk-text">Close out all outstanding technical queries relating to agreed scope</span></li>
+      <li><span class="chk-text">Confirm completion of services in writing to the client</span></li>
+      <li><span class="chk-text">Issue final invoice in accordance with agreed fee terms</span></li>
     </ul>
     <div class="section-label">9.8.2 Internal Project Close-Out (QA &amp; Risk Management)</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Update project status to &ldquo;Complete&rdquo; in all internal registers</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Ensure all final deliverables are saved in the project record per CLW QA procedures</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Record any issues, disputes, deviations from scope or notable lessons learned</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Identify and flag any PI-sensitive matters, unresolved risks or future exposure</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Close project file in line with CLW Quality Assurance requirements</span></li>
+      <li><span class="chk-text">Update project status to &ldquo;Complete&rdquo; in all internal registers</span></li>
+      <li><span class="chk-text">Ensure all final deliverables are saved in the project record per CLW QA procedures</span></li>
+      <li><span class="chk-text">Record any issues, disputes, deviations from scope or notable lessons learned</span></li>
+      <li><span class="chk-text">Identify and flag any PI-sensitive matters, unresolved risks or future exposure</span></li>
+      <li><span class="chk-text">Close project file in line with CLW Quality Assurance requirements</span></li>
     </ul>
     <div class="section-label">9.8.3 Feedback &amp; Continuous Improvement</div>
     <ul class="checklist">
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Request client feedback within 2&ndash;4 weeks of completion</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Focus: value added &middot; clarity of advice &middot; willingness to work together again</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Log feedback (positive or negative) &middot; Share positive feedback internally</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Use feedback to refine SOPs and proposals</span></li>
-      <li><div class="chk" onclick="toggleChk(this)"></div><span class="chk-text">Add project to portfolio where appropriate</span></li>
+      <li><span class="chk-text">Request client feedback within 2&ndash;4 weeks of completion</span></li>
+      <li><span class="chk-text">Focus: value added &middot; clarity of advice &middot; willingness to work together again</span></li>
+      <li><span class="chk-text">Log feedback (positive or negative) &middot; Share positive feedback internally</span></li>
+      <li><span class="chk-text">Use feedback to refine SOPs and proposals</span></li>
+      <li><span class="chk-text">Add project to portfolio where appropriate</span></li>
     </ul>
     <div style="margin-top:8px;font-size:11px;color:var(--ink3)">Responsibility: Practice Director / Project Lead</div>
     </div>
@@ -1728,6 +1726,14 @@ function showTab(id,btn){
   clearSearch();
   if(id==='timesheet') initTimesheet();
   if(id==='projects'){ renderProjList(); renderWorkload(); if(!activeProjectId&&projects.length) selectProject(projects[0].id); }
+  if(id==='fee'){
+    if(typeof buildFeeUI==='function') buildFeeUI();
+    if(typeof recalcAll==='function') recalcAll();
+    // Open all stages so services are immediately visible
+    setTimeout(function(){
+      if(typeof feeState!=='undefined') feeState.forEach(function(_,si){ toggleStageBlock(si); });
+    }, 30);
+  }
 }
 function toggleChk(el){el.classList.toggle('done');var t=el.nextElementSibling;if(t&&t.classList.contains('chk-text'))t.classList.toggle('done');}
 function toggleAcc(h){var b=h.nextElementSibling,a=h.querySelector('.acc-arrow');b.classList.toggle('open');a.classList.toggle('open');}
@@ -4437,7 +4443,7 @@ window.addEventListener('load', function(){
   // ── 1. Render immediately from embedded data ──────────────
   if(typeof renderProjList==='function'){ renderProjList(); renderWorkload(); }
   if(typeof l10Render==='function') l10Render();
-  if(typeof buildFeeUI==='function'){ buildFeeUI(); setTimeout(function(){toggleStageBlock(0);},50); }
+  if(typeof buildFeeUI==='function'){ buildFeeUI(); setTimeout(function(){ if(typeof feeState!=='undefined') feeState.forEach(function(_,si){ toggleStageBlock(si); }); recalcAll(); },80); }
   setTimeout(function(){
     if(typeof projects!=='undefined'&&projects.length&&!activeProjectId)
       if(typeof selectProject==='function') selectProject(projects[0].id);
