@@ -459,6 +459,7 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
   .sync-dot.offline{background:var(--red)}
   .sync-dot.logged-out{background:var(--ink3)}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  @keyframes barFlash{0%,100%{opacity:1}50%{opacity:.35}}
   .sync-user{color:#fff;font-weight:600}
   .sync-time{opacity:.5}
   .sync-btn{padding:4px 12px;border-radius:12px;border:0.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font-size:11px;font-family:var(--fb);transition:background .15s}
@@ -467,6 +468,7 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
   .sync-btn.saving{opacity:.6;cursor:not-allowed}
   .sync-avatars{display:flex;gap:4px}
   .sync-avatar{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;border:1.5px solid var(--ink)}
+  @keyframes barFlash{0%,100%{opacity:1}50%{opacity:.3}}
   @media print{.nav,.search-bar-wrap{display:none}.content{display:block!important;page-break-after:always}}
 </style>
 </head>
@@ -1030,30 +1032,134 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
   </div>
 </div>
 <div class="content" id="tab-team">
-  <div class="section-label">CLW Team</div>
-  <div class="team-grid">
-    <div class="team-card"><div class="team-avatar" style="background:var(--blue-l);color:var(--blue)">BH</div><div class="team-info"><div class="team-name">Ben Hickman</div><div class="team-role">Technical Director</div><div class="team-resp-label">Responsibilities</div><div class="team-tags"><span class="tag tag-blue">Technical oversight</span><span class="tag tag-blue">PI &amp; risk sign-off</span><span class="tag tag-blue">Contract review</span><span class="tag tag-blue">Stage 4b approvals</span></div></div></div>
-    <div class="team-card"><div class="team-avatar" style="background:var(--teal-l);color:var(--teal)">AM</div><div class="team-info"><div class="team-name">Andrea Maugeri</div><div class="team-role">Practice Director</div><div class="team-resp-label">Responsibilities</div><div class="team-tags"><span class="tag tag-teal">Business operations</span><span class="tag tag-teal">Client relationships</span><span class="tag tag-teal">Fee proposals</span><span class="tag tag-teal">SOP review</span></div></div></div>
-    <div class="team-card"><div class="team-avatar" style="background:var(--amber-l);color:var(--amber)">JE</div><div class="team-info"><div class="team-name">Johnny Etkind</div><div class="team-role">Senior Waterproofing Design Consultant</div><div class="team-resp-label">Responsibilities</div><div class="team-tags"><span class="tag tag-amber">Design delivery</span><span class="tag tag-amber">Stage 2&ndash;4b</span><span class="tag tag-amber">BS 8102 compliance</span></div></div></div>
-    <div class="team-card"><div class="team-avatar" style="background:var(--purple-l);color:var(--purple)">AD</div><div class="team-info"><div class="team-name">Adam</div><div class="team-role">Design Manager</div><div class="team-resp-label">Responsibilities</div><div class="team-tags"><span class="tag tag-purple">Drawing production</span><span class="tag tag-purple">CAD management</span><span class="tag tag-purple">Stage 3&ndash;4a</span></div></div></div>
+
+  <!-- EOS Accountability Chart -->
+  <div class="section-label">Accountability Chart</div>
+  <div class="card" style="padding:20px;overflow-x:auto">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0;min-width:600px">
+
+      <!-- Visionary + Integrator row -->
+      <div style="display:flex;gap:40px;justify-content:center;margin-bottom:0">
+
+        <!-- BEN — Visionary -->
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <div style="background:var(--ink);color:#fff;border-radius:10px;padding:14px 20px;width:200px;text-align:center;position:relative">
+            <div style="font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.45);margin-bottom:6px">Visionary</div>
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--blue-l);color:var(--blue);display:flex;align-items:center;justify-content:center;font-family:var(--ff);font-size:14px;font-weight:700;margin:0 auto 6px">BH</div>
+            <div style="font-family:var(--ff);font-size:14px;font-weight:700;color:#fff">Ben Hickman</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:8px">Technical Director</div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;justify-content:center">
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8)">Technical oversight</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8)">Final approval</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8)">Client relationships</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8)">Fee proposals</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8)">Business development</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8)">Marketing</span>
+            </div>
+          </div>
+          <!-- connector down -->
+          <div style="width:2px;height:30px;background:var(--border)"></div>
+        </div>
+
+        <!-- ANDREA — Integrator -->
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <div style="background:var(--teal);color:#fff;border-radius:10px;padding:14px 20px;width:200px;text-align:center">
+            <div style="font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.6);margin-bottom:6px">Integrator / Operator</div>
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--teal-l);color:var(--teal);display:flex;align-items:center;justify-content:center;font-family:var(--ff);font-size:14px;font-weight:700;margin:0 auto 6px">AM</div>
+            <div style="font-family:var(--ff);font-size:14px;font-weight:700;color:#fff">Andrea Maugeri</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.6);margin-bottom:8px">Practice Director</div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;justify-content:center">
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9)">Business operations</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9)">Client relationships</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9)">Business development</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9)">Fee proposals</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9)">SOP review</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9)">Team management</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9)">Resource management</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9)">Invoice management</span>
+            </div>
+          </div>
+          <!-- connector down -->
+          <div style="width:2px;height:30px;background:var(--border)"></div>
+        </div>
+
+      </div>
+
+      <!-- Horizontal connector line -->
+      <div style="width:500px;height:2px;background:var(--border);margin-bottom:0;position:relative;top:-30px"></div>
+
+      <!-- Right-seat team row -->
+      <div style="display:flex;gap:16px;justify-content:center;position:relative;top:-30px">
+
+        <!-- JOHNNY -->
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;width:155px;text-align:center">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:6px">Right Seat</div>
+          <div style="width:34px;height:34px;border-radius:50%;background:var(--amber-l);color:var(--amber);display:flex;align-items:center;justify-content:center;font-family:var(--ff);font-size:13px;font-weight:700;margin:0 auto 5px">JE</div>
+          <div style="font-family:var(--ff);font-size:12px;font-weight:700;color:var(--ink)">Johnny Etkind</div>
+          <div style="font-size:10px;color:var(--ink3);margin-bottom:7px">Sr. WP Consultant</div>
+          <div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center">
+            <span class="tag tag-amber" style="font-size:8px;margin:1px">Design delivery</span>
+            <span class="tag tag-amber" style="font-size:8px;margin:1px">Drawing production</span>
+            <span class="tag tag-amber" style="font-size:8px;margin:1px">Stage 2&ndash;6</span>
+            <span class="tag tag-amber" style="font-size:8px;margin:1px">AI implementer</span>
+          </div>
+        </div>
+
+        <!-- ADAM -->
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;width:155px;text-align:center">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:6px">Right Seat</div>
+          <div style="width:34px;height:34px;border-radius:50%;background:var(--purple-l);color:var(--purple);display:flex;align-items:center;justify-content:center;font-family:var(--ff);font-size:13px;font-weight:700;margin:0 auto 5px">AD</div>
+          <div style="font-family:var(--ff);font-size:12px;font-weight:700;color:var(--ink)">Adam</div>
+          <div style="font-size:10px;color:var(--ink3);margin-bottom:7px">Design Manager</div>
+          <div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center">
+            <span class="tag tag-purple" style="font-size:8px;margin:1px">Design delivery</span>
+            <span class="tag tag-purple" style="font-size:8px;margin:1px">Drawing production</span>
+            <span class="tag tag-purple" style="font-size:8px;margin:1px">Stage 2&ndash;6</span>
+            <span class="tag tag-purple" style="font-size:8px;margin:1px">CAD management</span>
+          </div>
+        </div>
+
+        <!-- LAURA -->
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;width:155px;text-align:center">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:6px">Right Seat</div>
+          <div style="width:34px;height:34px;border-radius:50%;background:var(--red-l);color:var(--red);display:flex;align-items:center;justify-content:center;font-family:var(--ff);font-size:13px;font-weight:700;margin:0 auto 5px">LE</div>
+          <div style="font-family:var(--ff);font-size:12px;font-weight:700;color:var(--ink)">Laura Etkind</div>
+          <div style="font-size:10px;color:var(--ink3);margin-bottom:7px">PA &amp; Marketing</div>
+          <div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center">
+            <span class="tag tag-red" style="font-size:8px;margin:1px">Ben&rsquo;s PA</span>
+            <span class="tag tag-red" style="font-size:8px;margin:1px">Marketing support</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </div>
+
+  <!-- Responsibilities Table -->
   <div class="section-label">Responsibilities Overview</div>
   <div class="card">
     <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:6px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3)">Process Step</th><th style="text-align:left;padding:6px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3)">Responsible</th></tr></thead>
+      <thead><tr style="border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:6px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3)">Process Step</th>
+        <th style="text-align:left;padding:6px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3)">Responsible</th>
+      </tr></thead>
       <tbody>
-        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Marketing &amp; enquiry handling</td><td style="padding:7px 8px"><span class="tag tag-teal" style="margin:0">Andrea</span></td></tr>
+        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Marketing &amp; business development</td><td style="padding:7px 8px"><span class="tag tag-blue" style="margin:0">Ben</span> <span class="tag tag-teal" style="margin:0">Andrea</span> <span class="tag tag-red" style="margin:0">Laura</span></td></tr>
         <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Fee proposals</td><td style="padding:7px 8px"><span class="tag tag-teal" style="margin:0">Andrea</span> <span class="tag tag-blue" style="margin:0">Ben</span></td></tr>
-        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Appointment &amp; contracts</td><td style="padding:7px 8px"><span class="tag tag-blue" style="margin:0">Ben</span></td></tr>
-        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Stage 0&ndash;2 (Familiarisation &amp; Concept)</td><td style="padding:7px 8px"><span class="tag tag-amber" style="margin:0">Johnny</span></td></tr>
-        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Stage 3&ndash;4a (Coordination &amp; Outline)</td><td style="padding:7px 8px"><span class="tag tag-amber" style="margin:0">Johnny</span> <span class="tag tag-purple" style="margin:0">Adam</span></td></tr>
-        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Stage 4b (Technical sign-off)</td><td style="padding:7px 8px"><span class="tag tag-blue" style="margin:0">Ben</span></td></tr>
+        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Client relationships</td><td style="padding:7px 8px"><span class="tag tag-blue" style="margin:0">Ben</span> <span class="tag tag-teal" style="margin:0">Andrea</span></td></tr>
+        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Technical oversight &amp; final sign-off</td><td style="padding:7px 8px"><span class="tag tag-blue" style="margin:0">Ben</span></td></tr>
+        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Business operations &amp; SOP review</td><td style="padding:7px 8px"><span class="tag tag-teal" style="margin:0">Andrea</span></td></tr>
+        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Team &amp; resource management</td><td style="padding:7px 8px"><span class="tag tag-teal" style="margin:0">Andrea</span></td></tr>
+        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Invoice management</td><td style="padding:7px 8px"><span class="tag tag-teal" style="margin:0">Andrea</span></td></tr>
+        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Stage 2&ndash;6 design delivery &amp; drawing production</td><td style="padding:7px 8px"><span class="tag tag-amber" style="margin:0">Johnny</span> <span class="tag tag-purple" style="margin:0">Adam</span></td></tr>
+        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">CAD management</td><td style="padding:7px 8px"><span class="tag tag-purple" style="margin:0">Adam</span></td></tr>
+        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">AI implementation</td><td style="padding:7px 8px"><span class="tag tag-amber" style="margin:0">Johnny</span></td></tr>
+        <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:7px 8px;color:var(--ink2)">Ben&rsquo;s PA &amp; marketing support</td><td style="padding:7px 8px"><span class="tag tag-red" style="margin:0">Laura</span></td></tr>
         <tr><td style="padding:7px 8px;color:var(--ink2)">Close-out &amp; client feedback</td><td style="padding:7px 8px"><span class="tag tag-teal" style="margin:0">Andrea</span></td></tr>
       </tbody>
     </table>
   </div>
 </div>
-
 <!-- L10 MEETING -->
 <div class="content" id="tab-l10">
 
@@ -1065,6 +1171,7 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
       <div class="l10-week-title" id="l10-week-label">Loading&hellip;</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="l10-export-btn" onclick="l10CopyPrevWeek()" title="Copy projects and updates from last week">&#x21BA; Copy prev week</button>
       <button class="l10-export-btn" onclick="l10Export()">&#x2193; Export Minutes</button>
       <button class="l10-save-btn" onclick="l10Save()">Save</button>
       <div class="l10-saved-msg" id="l10-saved-msg">Saved &#x2713;</div>
@@ -1218,10 +1325,49 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
           <div id="proj-programme-body"></div>
         </div>
         <div class="proj-panel" id="pp-afp">
+          <!-- AFP List -->
           <div id="proj-afp-body"></div>
-          <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="fee-btn fee-btn-primary" style="font-size:11px;padding:6px 14px" onclick="generateAFP()">Generate AFP</button>
-            <button class="fee-btn fee-btn-secondary" style="font-size:11px;padding:6px 14px" onclick="exportAFP()">Export AFP</button>
+          <!-- AFP Generator -->
+          <div style="margin-top:14px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r);padding:16px" id="afp-generator">
+            <div style="font-family:var(--ff);font-size:13px;font-weight:700;margin-bottom:12px;color:var(--ink)">&#x2795; Generate New AFP</div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">AFP Number</label><input class="form-input" id="afp-number" type="number" placeholder="e.g. 352"></div>
+              <div class="form-group"><label class="form-label">PO Number</label><input class="form-input" id="afp-po" placeholder="e.g. PO-12345"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Issue Date</label><input class="form-input" id="afp-date" type="date"></div>
+              <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="afp-due" placeholder="e.g. upon receipt"></div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group"><label class="form-label">Client Name</label><input class="form-input" id="afp-client" placeholder="e.g. Avasha Limited"></div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group"><label class="form-label">Client Address</label><textarea class="form-input" id="afp-client-address" style="min-height:56px" placeholder="Full client address"></textarea></div>
+            </div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin:10px 0 6px">Line Items</div>
+            <div id="afp-items-wrap"></div>
+            <button class="fee-btn fee-btn-secondary" style="font-size:11px;padding:5px 12px;margin-top:8px" onclick="afpAddItem()">+ Add item</button>
+            <div class="form-row" style="margin-top:12px">
+              <div class="form-group"><label class="form-label">Tax (%)</label><input class="form-input" id="afp-tax" type="number" value="20" min="0" max="100" oninput="afpRecalc()"></div>
+              <div class="form-group"><label class="form-label">Discount (%)</label><input class="form-input" id="afp-discount" type="number" value="0" min="0" oninput="afpRecalc()"></div>
+            </div>
+            <div style="background:var(--ink);border-radius:var(--r);padding:12px 16px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+              <div style="font-size:11px;color:rgba(255,255,255,.5)">
+                Subtotal: <span id="afp-subtotal" style="color:#fff">£0</span> &nbsp;|&nbsp;
+                Tax: <span id="afp-tax-amt" style="color:#fff">£0</span>
+              </div>
+              <div style="font-family:var(--ff);font-size:20px;font-weight:700;color:#fff">
+                Amount Due: <span id="afp-total">£0</span>
+              </div>
+            </div>
+            <div class="form-row full" style="margin-top:10px">
+              <div class="form-group"><label class="form-label">Notes (shown on AFP)</label><textarea class="form-input" id="afp-notes" style="min-height:56px">This is an application for payment. An invoice will be raised from our book keeping software in due course. Please acknowledge receipt and acceptance of this application for payment.</textarea></div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+              <button class="fee-btn fee-btn-primary" onclick="afpGenerate()">&#x2713; Save &amp; Preview AFP</button>
+              <button class="fee-btn fee-btn-secondary" onclick="afpAutoFill()">&#x2728; Auto-fill from tasks</button>
+              <button class="fee-btn fee-btn-reset" onclick="afpClearForm()">Clear</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1679,7 +1825,7 @@ function renderWorkload(){
   }).join('');
 }
 function selectProject(id){activeProjectId=id;renderProjList();document.getElementById('proj-empty').style.display='none';document.getElementById('proj-content').style.display='block';showProjTab('overview',document.querySelector('.proj-tab'));renderAllPanels();}
-function showProjTab(name,btn){document.querySelectorAll('.proj-panel').forEach(function(p){p.classList.remove('active');});document.querySelectorAll('.proj-tab').forEach(function(b){b.classList.remove('active');});var panel=document.getElementById('pp-'+name);if(panel)panel.classList.add('active');if(btn)btn.classList.add('active');renderAllPanels();}
+function showProjTab(name,btn){document.querySelectorAll('.proj-panel').forEach(function(p){p.classList.remove('active');});document.querySelectorAll('.proj-tab').forEach(function(b){b.classList.remove('active');});var panel=document.getElementById('pp-'+name);if(panel)panel.classList.add('active');if(btn)btn.classList.add('active');renderAllPanels();if(name==='afp'){var p=getActiveProject();if(p){renderAFP(p);afpInitForm(p);}}}
 function getActiveProject(){return projects.find(function(p){return p.id===activeProjectId;});}
 function getProjectById(id){return projects.find(function(p){return p.id===id;});}
 function renderAllPanels(){var p=getActiveProject();if(!p)return;renderOverview(p);renderTasks(p);renderTime(p);renderProgramme(p);renderAFP(p);}
@@ -1788,16 +1934,166 @@ function renderProgramme(p){
 
 function renderAFP(p){
   var el=document.getElementById('proj-afp-body');if(!el)return;
-  if(!p.afpList||!p.afpList.length){el.innerHTML='<div style="font-size:12px;color:var(--ink3);padding:8px 0">No AFP generated yet.</div>';return;}
-  var latest=p.afpList[p.afpList.length-1];
-  el.innerHTML='<div class="section-label">AFP #'+p.afpList.length+' &mdash; '+latest.date+'</div><div class="card" style="padding:8px 14px">'+latest.items.map(function(item){return '<div class="afp-row"><div style="flex:1;font-size:12px;color:var(--ink2)">'+escH(item.name)+'</div><div style="font-size:12px;font-weight:600">'+fmt(item.amount)+'</div></div>';}).join('')+'<div class="afp-total"><span style="font-size:12px;font-weight:700;color:var(--teal)">Total this AFP</span><span style="font-size:16px;font-weight:700;color:var(--teal)">'+fmt(latest.total)+'</span></div></div>';
+  if(!p.afpList||!p.afpList.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--ink3);padding:4px 0">No AFPs yet — use the form below.</div>';
+    return;
+  }
+  el.innerHTML='<div class="section-label" style="margin-top:0">Previous AFPs</div>'
+    +'<div class="card" style="padding:0;overflow:auto;margin-bottom:0">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:var(--bg2)">'
+      +'<th style="padding:7px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);border-bottom:1px solid var(--border)">AFP #</th>'
+      +'<th style="padding:7px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);border-bottom:1px solid var(--border)">Date</th>'
+      +'<th style="padding:7px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);border-bottom:1px solid var(--border)">Client</th>'
+      +'<th style="padding:7px 10px;text-align:right;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);border-bottom:1px solid var(--border)">Amount Due</th>'
+      +'<th style="padding:7px 10px;border-bottom:1px solid var(--border);width:130px"></th>'
+    +'</tr></thead><tbody>'
+    +p.afpList.map(function(afp,i){
+      return '<tr style="border-bottom:0.5px solid var(--border)">'
+        +'<td style="padding:8px 10px;font-weight:700">AFP #'+escH(String(afp.afpNumber||i+1))+'</td>'
+        +'<td style="padding:8px 10px;color:var(--ink3)">'+escH(afp.issueDate||afp.date||'—')+'</td>'
+        +'<td style="padding:8px 10px">'+escH(afp.clientName||'—')+'</td>'
+        +'<td style="padding:8px 10px;text-align:right;font-weight:700;color:var(--teal)">'+fmt(afp.total||0)+'</td>'
+        +'<td style="padding:8px 10px;text-align:right">'
+          +'<button class="fee-btn fee-btn-secondary" style="font-size:10px;padding:3px 8px;margin-right:4px" onclick="afpExport('+i+')">&#x2193; Export</button>'
+          +'<button class="fee-btn fee-btn-reset" style="font-size:10px;padding:3px 8px" onclick="afpDelete('+i+')">&#x2715;</button>'
+        +'</td>'
+      +'</tr>';
+    }).join('')
+    +'</tbody></table></div>';
 }
-function generateAFP(){var p=getActiveProject();if(!p)return;var done=p.tasks.filter(function(t){return t.done&&t.fee>0;});if(!done.length){alert('No completed tasks with fees.');return;}var items=done.map(function(t){return {name:t.name,amount:t.fee};});var total=items.reduce(function(a,i){return a+i.amount;},0);if(!p.afpList)p.afpList=[];p.afpList.push({date:new Date().toLocaleDateString('en-GB'),items:items,total:total});renderAFP(p);}
-function exportAFP(){
-  var p=getActiveProject();if(!p||!p.afpList||!p.afpList.length)return;var latest=p.afpList[p.afpList.length-1];
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>AFP - '+escH(p.name)+'</title><style>body{font-family:Arial,sans-serif;font-size:13px;max-width:700px;margin:40px auto;padding:0 28px}h1{font-size:20px;margin-bottom:4px}.meta{font-size:11px;color:#999;margin-bottom:28px;border-bottom:1px solid #eee;padding-bottom:12px}.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0ede6;font-size:12px}.total{display:flex;justify-content:space-between;margin-top:16px;padding:14px 18px;background:#1c1b18;color:#fff;border-radius:6px}.total .l{font-size:11px;opacity:.5;text-transform:uppercase}.total .a{font-size:26px;font-weight:700}button{display:block;margin:20px 0;padding:9px 22px;background:#1c1b18;color:#fff;border:none;border-radius:6px;cursor:pointer}@media print{button{display:none}}</style></head><body><h1>Application for Payment</h1><div class="meta"><b>Project:</b> '+escH(p.name)+(p.code?' ('+escH(p.code)+')':'')+'<br><b>Address:</b> '+(p.address||'—')+'<br><b>Date:</b> '+latest.date+'<br><b>Payment Terms:</b> '+(p.paymentTerms||'—')+'</div>'+latest.items.map(function(i){return '<div class="row"><span>'+escH(i.name)+'</span><span>'+fmt(i.amount)+'</span></div>';}).join('')+'<div class="total"><span class="l">Amount Due</span><span class="a">'+fmt(latest.total)+'</span></div><button onclick="window.print()">Print / Save as PDF</button></body></html>';
-  var w=window.open('','_blank','width=760,height=680,scrollbars=yes');if(w){w.document.write(html);w.document.close();}
+
+var afpItems = [];
+
+function afpInitForm(p){
+  var clientEl=document.getElementById('afp-client');
+  if(clientEl&&p&&!clientEl.value) clientEl.value=p.address||'';
+  var dateEl=document.getElementById('afp-date');
+  if(dateEl&&!dateEl.value) dateEl.value=new Date().toISOString().slice(0,10);
+  var dueEl=document.getElementById('afp-due');
+  if(dueEl&&!dueEl.value) dueEl.value='upon receipt';
+  var numEl=document.getElementById('afp-number');
+  if(numEl&&!numEl.value&&p&&p.afpList&&p.afpList.length){
+    var last=p.afpList[p.afpList.length-1].afpNumber||p.afpList.length;
+    numEl.value=parseInt(last)+1;
+  }
+  if(!afpItems.length) afpItems=[{desc:'',qty:1,unitPrice:0}];
+  afpRenderItems();
 }
+
+function afpRenderItems(){
+  var wrap=document.getElementById('afp-items-wrap');if(!wrap)return;
+  wrap.innerHTML=afpItems.map(function(item,i){
+    return '<div style="display:grid;grid-template-columns:1fr 60px 90px 32px;gap:6px;align-items:center;margin-bottom:6px">'
+      +'<input class="form-input" type="text" value="'+escH(item.desc||'')+'" placeholder="Description" style="font-size:12px" onchange="afpSetItem('+i+',\'desc\',this.value)">'
+      +'<input class="form-input" type="number" value="'+(item.qty||1)+'" min="0" style="text-align:right;font-size:12px" placeholder="Qty" onchange="afpSetItem('+i+',\'qty\',this.value);afpRecalc()">'
+      +'<input class="form-input" type="number" value="'+(item.unitPrice||'')+'" min="0" style="text-align:right;font-size:12px" placeholder="\xa3 Unit" onchange="afpSetItem('+i+',\'unitPrice\',this.value);afpRecalc()">'
+      +'<button class="fee-btn fee-btn-reset" style="padding:4px 8px" onclick="afpRemoveItem('+i+')">\xd7</button>'
+    +'</div>';
+  }).join('');
+  afpRecalc();
+}
+
+function afpAddItem(){ afpItems.push({desc:'',qty:1,unitPrice:0}); afpRenderItems(); }
+function afpRemoveItem(i){ afpItems.splice(i,1); afpRenderItems(); }
+function afpSetItem(i,field,val){
+  if(!afpItems[i])return;
+  afpItems[i][field]=(field==='qty'||field==='unitPrice')?parseFloat(val)||0:val;
+}
+function afpRecalc(){
+  var subtotal=afpItems.reduce(function(a,it){return a+(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0);},0);
+  var taxPct=parseFloat((document.getElementById('afp-tax')||{}).value||20)||0;
+  var discPct=parseFloat((document.getElementById('afp-discount')||{}).value||0)||0;
+  var disc=subtotal*(1-discPct/100);
+  var taxAmt=disc*taxPct/100;
+  var total=disc+taxAmt;
+  var s=function(id,v){var el=document.getElementById(id);if(el)el.textContent=fmt(v);};
+  s('afp-subtotal',subtotal);s('afp-tax-amt',taxAmt);s('afp-total',total);
+}
+function afpAutoFill(){
+  var p=getActiveProject();if(!p)return;
+  afpItems=p.tasks.filter(function(t){return t.fee>0;}).map(function(t){
+    return {desc:t.name+(t.stage?' ('+t.stage+')':''),qty:1,unitPrice:t.fee};
+  });
+  if(!afpItems.length){alert('No tasks with fees found. Add tasks with fees first.');return;}
+  afpRenderItems();
+  afpInitForm(p);
+}
+function afpClearForm(){
+  afpItems=[{desc:'',qty:1,unitPrice:0}];
+  ['afp-number','afp-po','afp-date','afp-due','afp-client','afp-client-address'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value='';
+  });
+  afpRenderItems();
+  afpInitForm(getActiveProject());
+}
+function afpGenerate(){
+  var p=getActiveProject();if(!p)return;
+  var g=function(id){var el=document.getElementById(id);return el?el.value:'';};
+  var num=g('afp-number')||(p.afpList?p.afpList.length+1:1);
+  var issueDate=g('afp-date')||new Date().toISOString().slice(0,10);
+  var validItems=afpItems.filter(function(it){return it.desc||it.unitPrice;});
+  if(!validItems.length){alert('Add at least one line item.');return;}
+  var subtotal=validItems.reduce(function(a,it){return a+(it.qty||1)*(it.unitPrice||0);},0);
+  var taxPct=parseFloat(g('afp-tax'))||20;
+  var discPct=parseFloat(g('afp-discount'))||0;
+  var disc=subtotal*(1-discPct/100);
+  var taxAmt=disc*taxPct/100;
+  var total=disc+taxAmt;
+  var afpRecord={
+    id:genId(),afpNumber:num,poNumber:g('afp-po'),
+    issueDate:issueDate,dueDate:g('afp-due')||'upon receipt',
+    clientName:g('afp-client')||p.address,clientAddress:g('afp-client-address'),
+    items:validItems,subtotal:subtotal,taxPct:taxPct,taxAmt:taxAmt,discPct:discPct,total:total,
+    notes:g('afp-notes'),date:new Date().toLocaleDateString('en-GB')
+  };
+  if(!p.afpList)p.afpList=[];
+  p.afpList.push(afpRecord);
+  renderAFP(p);
+  syncAutoSave();
+  afpExport(p.afpList.length-1);
+}
+function afpExport(idx){
+  var p=getActiveProject();if(!p||!p.afpList)return;
+  var afp=p.afpList[idx];if(!afp)return;
+  var issueFmt=afp.issueDate?afp.issueDate.replace(/-/g,'.'):afp.date;
+  var itemRows=(afp.items||[]).map(function(it){
+    var amt=(parseFloat(it.qty)||1)*(parseFloat(it.unitPrice)||0);
+    return '<tr><td style="padding:10px 12px;border-bottom:1px solid #e8e5dd;font-size:12px">Product</td>'
+      +'<td style="padding:10px 12px;border-bottom:1px solid #e8e5dd;font-size:12px">'+escH(it.desc||'')+'</td>'
+      +'<td style="padding:10px 12px;border-bottom:1px solid #e8e5dd;font-size:12px;text-align:right">'+(it.qty||1)+'</td>'
+      +'<td style="padding:10px 12px;border-bottom:1px solid #e8e5dd;font-size:12px;text-align:right">'+fmt(it.unitPrice||0)+'</td>'
+      +'<td style="padding:10px 12px;border-bottom:1px solid #e8e5dd;font-size:12px;text-align:right">'+fmt(amt)+'</td></tr>';
+  }).join('');
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>AFP '+escH(String(afp.afpNumber||''))+'</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1c1b18;background:#fff}.page{max-width:820px;margin:0 auto;padding:40px 48px}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px}.logo{width:120px;height:70px;background:#0066b2;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;font-weight:900;letter-spacing:-1px}.doc-title{text-align:right}.doc-title h1{font-size:22px;font-weight:700;line-height:1.2}.from-block{font-size:11px;color:#666;margin-top:8px;line-height:1.6}.from-block strong{color:#1c1b18}.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #ddd;margin-bottom:20px}.meta-left{padding:16px 18px;border-right:1px solid #ddd}.meta-right{padding:16px 18px}.subject-row{padding:10px 18px;border:1px solid #ddd;border-top:none;margin-bottom:20px;font-size:12px;color:#666}.subject-row strong{color:#1c1b18}table{width:100%;border-collapse:collapse}thead th{padding:9px 12px;background:#f5f3ed;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#666;border-bottom:2px solid #1c1b18;text-align:left}thead th.r{text-align:right}.tot-row{display:flex;justify-content:space-between;padding:6px 12px;font-size:12px;border-bottom:.5px solid #eee;background:#faf9f6}.tot-final{display:flex;justify-content:space-between;padding:14px 18px;background:#1c1b18;color:#fff;margin-top:0}.tot-final .l{font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.1em}.tot-final .v{font-size:22px;font-weight:700}.notes{margin-top:24px;padding:16px;background:#f5f3ed;border-radius:6px}.notes-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#999;margin-bottom:6px}.footer{margin-top:32px;text-align:center;font-size:10px;color:#bbb}button{display:block;margin:24px auto;padding:10px 28px;background:#1c1b18;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;font-family:Arial}@media print{button{display:none}}</style></head><body>'
+    +'<div class="page">'
+    +'<div class="header"><div class="logo">CLW</div><div class="doc-title"><h1>APPLICATION FOR<br>PAYMENT</h1><div class="from-block"><strong>CLW Consulting</strong><br>Room 73, Wrest House Wrest Park<br>Silsoe, Bedford, England MK45 4HR</div></div></div>'
+    +'<div class="meta-grid"><div class="meta-left"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:4px">Application for Payment For</div><div style="font-size:14px;font-weight:700">'+escH(afp.clientName||'')+'</div>'+(afp.clientAddress?'<div style="font-size:11px;color:#666;margin-top:4px">'+escH(afp.clientAddress).replace(/\n/g,'<br>')+'</div>':'')+'</div>'
+    +'<div class="meta-right"><table style="width:100%;border-collapse:collapse"><tr><td style="font-size:11px;color:#999;padding:3px 0">Application for Payment ID</td><td style="font-size:12px;font-weight:700;text-align:right;padding:3px 0">'+escH(String(afp.afpNumber||''))+'</td></tr>'+(afp.poNumber?'<tr><td style="font-size:11px;color:#999;padding:3px 0">PO Number</td><td style="font-size:12px;text-align:right;padding:3px 0">'+escH(afp.poNumber)+'</td></tr>':'')+'<tr><td style="font-size:11px;color:#999;padding:3px 0">Issue Date</td><td style="font-size:12px;text-align:right;padding:3px 0">'+escH(issueFmt||'')+'</td></tr><tr><td style="font-size:11px;color:#999;padding:3px 0">Due Date</td><td style="font-size:12px;text-align:right;padding:3px 0">'+escH(issueFmt||'')+(afp.dueDate?' ('+escH(afp.dueDate)+')':'')+'</td></tr></table></div></div>'
+    +'<div class="subject-row"><strong>Subject:</strong> &nbsp;CLW Application for Payment</div>'
+    +'<table><thead><tr><th>Item Type</th><th>Description</th><th class="r">Quantity</th><th class="r">Unit Price</th><th class="r">Amount</th></tr></thead><tbody>'+itemRows+'</tbody></table>'
+    +'<div class="tot-row"><span>Subtotal</span><span>'+fmt(afp.subtotal||0)+'</span></div>'
+    +(afp.discPct?'<div class="tot-row"><span>Discount ('+afp.discPct+'%)</span><span>-'+fmt((afp.subtotal||0)*afp.discPct/100)+'</span></div>':'')
+    +'<div class="tot-row"><span>Tax ('+afp.taxPct+'%)</span><span>'+fmt(afp.taxAmt||0)+'</span></div>'
+    +'<div class="tot-final"><span class="l">Amount Due</span><span class="v">'+fmt(afp.total||0)+'</span></div>'
+    +(afp.notes?'<div class="notes"><div class="notes-lbl">Notes</div><div style="font-size:12px;line-height:1.6">'+escH(afp.notes).replace(/\n/g,'<br>')+'</div></div>':'')
+    +'<div class="footer">Page 1 of 1</div>'
+    +'<button onclick="window.print()">Print / Save as PDF</button>'
+    +'</div></body></html>';
+  var w=window.open('','_blank','width=900,height=750,scrollbars=yes');
+  if(w){w.document.write(html);w.document.close();}
+  else{var a=document.createElement('a');a.href='data:text/html;charset=utf-8,'+encodeURIComponent(html);a.download='AFP_'+String(afp.afpNumber||idx+1)+'_'+p.name.replace(/[^a-z0-9]/gi,'_')+'.html';document.body.appendChild(a);a.click();document.body.removeChild(a);}
+}
+function afpDelete(idx){
+  var p=getActiveProject();if(!p||!p.afpList)return;
+  if(!confirm('Delete AFP #'+(p.afpList[idx]?p.afpList[idx].afpNumber||idx+1:'')+'?'))return;
+  p.afpList.splice(idx,1);renderAFP(p);syncAutoSave();
+}
+// Legacy wrappers
+function generateAFP(){afpAutoFill();}
+function exportAFP(){var p=getActiveProject();if(p&&p.afpList&&p.afpList.length)afpExport(p.afpList.length-1);}
+
 
 /* New Project Wizard */
 function openNewProjectModal(existing){
@@ -2489,18 +2785,49 @@ function l10ProjSnapshot(projId) {
   var totalBudget = p.tasks.reduce(function(a,t){return a+(parseFloat(t.budgetHrs)||0);},0);
   var loggedHrs   = p.timeLogs.reduce(function(a,l){return a+(parseFloat(l.hrs)||0);},0);
   var hourlyRate  = totalBudget>0 ? totalFee/totalBudget : 198;
-  var feeSpent    = loggedHrs * hourlyRate;
-  var feeRemain   = Math.max(0, totalFee - feeSpent);
-  var pct         = totalBudget>0 ? Math.min(100,Math.round(loggedHrs/totalBudget*100)) : 0;
-  // Current active stage = first stage with incomplete tasks
+
+  // Use Harvest actuals if available and more accurate than timeLogs
+  var harvestFee  = parseFloat(p.harvestBudget)||0;
+  var harvestSpent= parseFloat(p.harvestSpent)||0;
+  var harvestHrs  = parseFloat(p.harvestBillableHrs)||0;
+
+  // Prefer Harvest data if it exists (imported projects)
+  // Use whichever source shows the higher spend (most conservative/accurate)
+  var feeSpentFromLogs = loggedHrs * hourlyRate;
+  var feeSpent, usedHrs, usedBudget;
+
+  if (harvestSpent > 0 && harvestFee > 0) {
+    // Harvest data available — use it as primary source
+    feeSpent  = harvestSpent;
+    usedHrs   = harvestHrs > 0 ? harvestHrs : loggedHrs;
+    usedBudget= harvestFee > 0 ? harvestFee / hourlyRate : totalBudget;
+    totalFee  = harvestFee > 0 ? harvestFee : totalFee;
+  } else {
+    feeSpent  = feeSpentFromLogs;
+    usedHrs   = loggedHrs;
+    usedBudget= totalBudget;
+  }
+
+  var feeRemain = Math.max(0, totalFee - feeSpent);
+  var pct       = usedBudget > 0 ? Math.round(usedHrs / usedBudget * 100) : 0;
+
+  // Also compute pct from fee directly as a cross-check
+  if (totalFee > 0) {
+    pct = Math.round(feeSpent / totalFee * 100);
+  }
+
+  // Current active stage
   var activeStage = '';
   var stageSeen = {};
   p.tasks.forEach(function(t){
     if(!t.done && t.stage && !stageSeen[t.stage]){stageSeen[t.stage]=true;}
   });
   var stageKeys = Object.keys(stageSeen);
-  activeStage = stageKeys.length ? stageKeys[0] : (p.tasks.length ? p.tasks[p.tasks.length-1].stage : '');
-  return {name:p.name, status:p.status, stage:activeStage, totalFee:totalFee, loggedHrs:loggedHrs, totalBudget:totalBudget, feeSpent:feeSpent, feeRemain:feeRemain, pct:pct};
+  activeStage = stageKeys.length ? stageKeys[0] : (p.tasks.length ? p.tasks[p.tasks.length-1].stage : 'Active');
+
+  return {name:p.name, status:p.status, stage:activeStage,
+    totalFee:totalFee, loggedHrs:usedHrs, totalBudget:usedBudget,
+    feeSpent:feeSpent, feeRemain:feeRemain, pct:pct};
 }
 
 function l10FmtMoney(n){ return '\u00a3'+(Math.round(n)||0).toLocaleString('en-GB'); }
@@ -2526,7 +2853,19 @@ function l10RenderLive() {
     var fb   = row.feedback || 'Not requested';
     var fbc  = L10_FEEDBACK_COL[fb] || L10_FEEDBACK_COL['Not requested'];
     var pct  = snap ? snap.pct : 0;
-    var barCol = pct>90?'var(--red)':pct>70?'var(--amber)':'var(--teal)';
+    // Cost analysis colours per brief:
+    // Green = under 80% spent, Yellow = 80-95%, Red = 95-100%, Flash bright red = over 100%
+    var barCol, barLabel = '', barAlert = false;
+    if (pct > 100) {
+      barCol = '#ff0033'; barAlert = true;
+    } else if (pct >= 95) {
+      barCol = 'var(--red)';
+    } else if (pct >= 80) {
+      barCol = 'var(--amber)';
+    } else {
+      barCol = 'var(--teal)';
+    }
+    var overSpend = snap ? Math.max(0, snap.feeSpent - snap.totalFee) : 0;
 
     // Project cell: dropdown + optional custom name input
     var projCell = '<select style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-weight:600;font-family:var(--fb);background:var(--white);color:var(--ink);margin-bottom:3px" '
@@ -2538,20 +2877,27 @@ function l10RenderLive() {
           + 'style="width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:var(--fb);background:var(--bg2)" '
           + 'onchange="l10SetLive('+i+',\'name\',this.value)">' : '');
 
-    // Snapshot cell: stage + fee bar
+    // Snapshot cell: stage + fee bar — colour-coded background
+    var snapBg = pct > 100 ? 'background:#ff003311;border:1.5px solid #ff0033' : pct >= 95 ? 'background:var(--red-l);border:1px solid var(--red)' : pct >= 80 ? 'background:var(--amber-l);border:1px solid var(--amber)' : 'background:var(--teal-l);border:1px solid var(--teal)';
     var snapCell = snap
-      ? '<div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">'
-          + escH(snap.stage||'—')
+      ? '<div style="border-radius:6px;padding:6px 8px;'+snapBg+'">'
+          + '<div style="font-size:10px;font-weight:700;color:'+barCol+';margin-bottom:3px">'
+              + escH(snap.stage||'—')
+              + ' <span style="opacity:.8">('+pct+'%)</span>'
+            + '</div>'
+          + '<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px">'
+              + '<span style="color:var(--ink2)">Spent: <b style="color:'+barCol+'">'+l10FmtMoney(snap.feeSpent)+'</b></span>'
+              + '<span style="color:var(--ink2)">Left: <b>'+l10FmtMoney(snap.feeRemain)+'</b></span>'
+            + '</div>'
+          + '<div style="height:6px;background:rgba(0,0,0,.1);border-radius:3px;overflow:hidden">'
+              + '<div style="height:100%;width:'+Math.min(pct,100)+'%;background:'+barCol+';border-radius:3px;transition:width .3s'+(barAlert?';animation:barFlash .5s infinite':'')+'"></div>'
+            + '</div>'
+          + (barAlert
+              ? '<div style="font-size:10px;font-weight:700;color:#ff0033;margin-top:4px;animation:barFlash .5s infinite">&#x26A0; '+pct+'% — losing '+l10FmtMoney(overSpend)+'</div>'
+              : '<div style="font-size:9px;color:var(--ink3);margin-top:2px">Fee: '+l10FmtMoney(snap.totalFee)+'</div>'
+            )
         + '</div>'
-        + '<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">'
-          + '<span style="color:var(--teal)">Spent: <b>'+l10FmtMoney(snap.feeSpent)+'</b></span>'
-          + '<span style="color:var(--amber)">To invoice: <b>'+l10FmtMoney(snap.feeRemain)+'</b></span>'
-        + '</div>'
-        + '<div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden">'
-          + '<div style="height:100%;width:'+pct+'%;background:'+barCol+';border-radius:3px;transition:width .3s"></div>'
-        + '</div>'
-        + '<div style="font-size:9px;color:var(--ink3);margin-top:2px">'+pct+'% of '+snap.totalBudget+'h budget used &middot; Total fee: '+l10FmtMoney(snap.totalFee)+'</div>'
-      : '<div style="font-size:11px;color:var(--ink3)">Select project above to see financials</div>';
+      : '<div style="font-size:11px;color:var(--ink3)">Select project to see financials</div>';
 
     // Status colours
     var proj = row.projId ? getProjectById(row.projId) : null;
@@ -2832,6 +3178,46 @@ function l10Toggle(head){
 function l10Save(){
   var msg=document.getElementById('l10-saved-msg');
   if(msg){msg.style.opacity='1';setTimeout(function(){msg.style.opacity='0';},2000);}
+}
+
+function l10CopyPrevWeek(){
+  var wk = l10WeekKey(l10WeekOffset);
+  var prevWk = l10WeekKey(l10WeekOffset - 1);
+  var prev = l10Data[prevWk];
+  if (!prev || !prev.liveJobs || !prev.liveJobs.length) {
+    alert('No live jobs found in the previous week to copy.');
+    return;
+  }
+  var d = l10GetData();
+  var removedIds = d.removedJobIds || [];
+  // Copy jobs not already in this week and not removed
+  var existing = d.liveJobs.map(function(j){return j.projId||j.name;});
+  var added = 0;
+  prev.liveJobs.forEach(function(j){
+    var key = j.projId||j.name;
+    if (removedIds.indexOf(key) !== -1) return; // was removed — skip
+    if (existing.indexOf(key) !== -1) return;    // already here — skip
+    d.liveJobs.push({
+      projId:   j.projId||'',
+      name:     j.name||'',
+      feedback: j.feedback||'Not requested',
+      owner:    j.owner||'',
+      update:   j.update||''   // carry update/comments too
+    });
+    added++;
+  });
+  // Also copy open actions
+  var prevOpenActions = prev.actions ? prev.actions.filter(function(a){return !a.done;}) : [];
+  var existingActions = d.actions.map(function(a){return a.text;});
+  prevOpenActions.forEach(function(a){
+    if (existingActions.indexOf(a.text) === -1) {
+      d.actions.push(Object.assign({},a));
+    }
+  });
+  l10Render();
+  syncAutoSave();
+  if (added === 0) alert('All projects from last week are already in this week.');
+  else syncToast('Copiati ' + added + ' progetti dalla settimana precedente');
 }
 
 /* ── EXPORT MINUTES ── */
