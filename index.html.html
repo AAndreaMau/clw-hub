@@ -2785,18 +2785,49 @@ function l10ProjSnapshot(projId) {
   var totalBudget = p.tasks.reduce(function(a,t){return a+(parseFloat(t.budgetHrs)||0);},0);
   var loggedHrs   = p.timeLogs.reduce(function(a,l){return a+(parseFloat(l.hrs)||0);},0);
   var hourlyRate  = totalBudget>0 ? totalFee/totalBudget : 198;
-  var feeSpent    = loggedHrs * hourlyRate;
-  var feeRemain   = Math.max(0, totalFee - feeSpent);
-  var pct         = totalBudget>0 ? Math.min(100,Math.round(loggedHrs/totalBudget*100)) : 0;
-  // Current active stage = first stage with incomplete tasks
+
+  // Use Harvest actuals if available and more accurate than timeLogs
+  var harvestFee  = parseFloat(p.harvestBudget)||0;
+  var harvestSpent= parseFloat(p.harvestSpent)||0;
+  var harvestHrs  = parseFloat(p.harvestBillableHrs)||0;
+
+  // Prefer Harvest data if it exists (imported projects)
+  // Use whichever source shows the higher spend (most conservative/accurate)
+  var feeSpentFromLogs = loggedHrs * hourlyRate;
+  var feeSpent, usedHrs, usedBudget;
+
+  if (harvestSpent > 0 && harvestFee > 0) {
+    // Harvest data available — use it as primary source
+    feeSpent  = harvestSpent;
+    usedHrs   = harvestHrs > 0 ? harvestHrs : loggedHrs;
+    usedBudget= harvestFee > 0 ? harvestFee / hourlyRate : totalBudget;
+    totalFee  = harvestFee > 0 ? harvestFee : totalFee;
+  } else {
+    feeSpent  = feeSpentFromLogs;
+    usedHrs   = loggedHrs;
+    usedBudget= totalBudget;
+  }
+
+  var feeRemain = Math.max(0, totalFee - feeSpent);
+  var pct       = usedBudget > 0 ? Math.round(usedHrs / usedBudget * 100) : 0;
+
+  // Also compute pct from fee directly as a cross-check
+  if (totalFee > 0) {
+    pct = Math.round(feeSpent / totalFee * 100);
+  }
+
+  // Current active stage
   var activeStage = '';
   var stageSeen = {};
   p.tasks.forEach(function(t){
     if(!t.done && t.stage && !stageSeen[t.stage]){stageSeen[t.stage]=true;}
   });
   var stageKeys = Object.keys(stageSeen);
-  activeStage = stageKeys.length ? stageKeys[0] : (p.tasks.length ? p.tasks[p.tasks.length-1].stage : '');
-  return {name:p.name, status:p.status, stage:activeStage, totalFee:totalFee, loggedHrs:loggedHrs, totalBudget:totalBudget, feeSpent:feeSpent, feeRemain:feeRemain, pct:pct};
+  activeStage = stageKeys.length ? stageKeys[0] : (p.tasks.length ? p.tasks[p.tasks.length-1].stage : 'Active');
+
+  return {name:p.name, status:p.status, stage:activeStage,
+    totalFee:totalFee, loggedHrs:usedHrs, totalBudget:usedBudget,
+    feeSpent:feeSpent, feeRemain:feeRemain, pct:pct};
 }
 
 function l10FmtMoney(n){ return '\u00a3'+(Math.round(n)||0).toLocaleString('en-GB'); }
