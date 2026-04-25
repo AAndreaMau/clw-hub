@@ -1795,17 +1795,16 @@ function fmtN(n){return Math.round(n||0).toLocaleString('en-GB');}
 /* ── SEARCH ── */
 
 /* ═══════════════════════════════════════════════════════════
-   CLW AI ASSISTANT v2
+   CLW AI ASSISTANT v3 — uses Claude artifact proxy
+   Bypasses CORS by calling the API through an iframe postMessage
 ═══════════════════════════════════════════════════════════ */
 
 var aiHistory    = [];
 var aiIsThinking = false;
 var aiPanelOpen  = false;
+var aiIframe     = null;
 
-// ── Anthropic API key — get from console.anthropic.com/settings/keys ──
-var ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
-
-
+var AI_SUGGESTIONS = [
   'How do I raise an AFP?',
   'What is the fee proposal process?',
   'Which projects are over budget?',
@@ -1816,66 +1815,144 @@ var ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
   'What is our waterproofing assessment process?'
 ];
 
-/* ── Build context from live Hub data ── */
+/* ── Build context string ── */
 function aiGetContext() {
   var lines = [];
   lines.push("You are the CLW Hub Assistant — an expert on CLW Consulting's processes, projects and SOP.");
-  lines.push("CLW Consulting is a specialist UK waterproofing consultancy. Services: BS 8102, podium decks, below-ground waterproofing, construction risk.");
-  lines.push("Team: Ben Hickman (Technical Director — technical oversight, fee proposals, BD, marketing), Andrea Maugeri (Practice Director — operations, invoicing, SOP, team management), Johnny Etkind (Senior WP Consultant — design, drawings, Stage 2-6), Adam Leatherdale (Design Manager — CAD, Stage 2-6), Laura Etkind (PA and Marketing).");
+  lines.push("CLW Consulting: specialist UK waterproofing consultancy. Services: BS 8102, podium decks, below-ground waterproofing, construction risk.");
+  lines.push("Team: Ben Hickman (Technical Director — technical, fee proposals, BD, marketing), Andrea Maugeri (Practice Director — operations, invoicing, SOP), Johnny Etkind (Senior WP Consultant — design, Stage 2-6), Adam Leatherdale (Design Manager — CAD, Stage 2-6), Laura Etkind (PA/Marketing).");
   lines.push("RIBA Stages: 0=Familiarisation, 2=Concept, 3=Spatial Coordination, 4a=Technical Design Outline, 4b=Technical Design Detailed, 5=Construction, 6/7=Close-Out.");
-  lines.push("Fees: Hourly rate £198, Meeting rate £660. AFP = Application for Payment.");
-  lines.push("Hub tabs: Overview, Core Systems, HR & Finance, Marketing, Enquiry→Fee, Appointment, Services (RIBA SOP), Close-Out, Team, L10 (weekly meeting), Projects, Timesheet, Dashboard (forecast/pipeline/scorecard), Fee Calculator.");
-
+  lines.push("Fees: Hourly £198, Meeting £660. AFP = Application for Payment (raised in Projects tab).");
+  lines.push("Hub tabs: Overview, Core Systems, HR & Finance, Marketing, Enquiry→Fee, Appointment, Services (RIBA SOP), Close-Out, Team, L10 (weekly meeting), Projects, Timesheet, Dashboard (forecast/scorecard), Fee Calculator.");
   if (typeof projects !== 'undefined' && projects.length) {
     var active = projects.filter(function(p){ return p.status==='Active'; });
-    var over = projects.filter(function(p){
-      return p.harvestSpent > p.harvestBudget*1.05 && p.harvestBudget > 0;
-    });
+    var over   = projects.filter(function(p){ return p.harvestBudget>0 && p.harvestSpent > p.harvestBudget*1.05; });
     lines.push("ACTIVE PROJECTS (" + active.length + "): " + active.slice(0,8).map(function(p){return p.name;}).join(', ') + ".");
-    if (over.length) {
-      lines.push("OVERSPEND: " + over.map(function(p){
-        return p.name + " (" + Math.round(p.harvestSpent/p.harvestBudget*100) + "%)";
-      }).join(', ') + ".");
-    }
+    if (over.length) lines.push("OVERSPEND: " + over.map(function(p){ return p.name + " (" + Math.round(p.harvestSpent/p.harvestBudget*100) + "%)"; }).join(', ') + ".");
   }
   if (typeof dashProjects !== 'undefined' && dashProjects.length) {
     var now = new Date();
     var ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
-    var thisM = dashProjects.reduce(function(s,p){ return s+((p.fees&&p.fees[ym])?+p.fees[ym]:0); },0);
-    lines.push("FORECAST this month: £" + Math.round(thisM).toLocaleString('en-GB') + " across " + dashProjects.length + " projects.");
+    var m = dashProjects.reduce(function(s,p){return s+((p.fees&&p.fees[ym])?+p.fees[ym]:0);},0);
+    lines.push("FORECAST this month: £" + Math.round(m).toLocaleString('en-GB') + ".");
   }
-  lines.push("Answer concisely and practically. Reference specific Hub tabs when relevant. Use bullet points for processes. If asked where to find something, name the exact tab.");
+  lines.push("Be concise and practical. Reference specific Hub tabs. Use bullet points for processes.");
   return lines.join('\n');
 }
 
-/* ── Open panel ── */
+/* ── Create hidden iframe that proxies the Claude API call ── */
+function aiGetIframe() {
+  if (aiIframe && document.body.contains(aiIframe)) return aiIframe;
+
+  var iframe = document.createElement('iframe');
+  iframe.style.cssText = 'display:none;width:0;height:0;border:none;position:absolute;';
+  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+  
+  // The iframe contains a mini page that calls the Claude API
+  // postMessage in, postMessage out
+  var iframeContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><script>
+    window.addEventListener('message', async function(e) {
+      if (!e.data || e.data.type !== 'CLW_AI_REQUEST') return;
+      var id = e.data.id;
+      try {
+        var resp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': e.data.key,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 600,
+            system: e.data.system,
+            messages: e.data.messages
+          })
+        });
+        var data = await resp.json();
+        if (!resp.ok) {
+          parent.postMessage({type:'CLW_AI_RESPONSE',id:id,error:(data.error&&data.error.message)||'HTTP '+resp.status}, '*');
+          return;
+        }
+        var text = (data.content && data.content[0]) ? data.content[0].text : 'No response.';
+        parent.postMessage({type:'CLW_AI_RESPONSE', id:id, text:text}, '*');
+      } catch(err) {
+        parent.postMessage({type:'CLW_AI_RESPONSE', id:id, error:err.message}, '*');
+      }
+    });
+    parent.postMessage({type:'CLW_AI_READY'}, '*');
+  <\/script></body></html>`;
+
+  iframe.srcdoc = iframeContent;
+  document.body.appendChild(iframe);
+  aiIframe = iframe;
+  return iframe;
+}
+
+/* ── Call Claude via iframe ── */
+var aiPendingRequests = {};
+
+window.addEventListener('message', function(e) {
+  if (!e.data) return;
+  if (e.data.type === 'CLW_AI_READY') {
+    console.log('CLW AI iframe ready');
+  }
+  if (e.data.type === 'CLW_AI_RESPONSE') {
+    var cb = aiPendingRequests[e.data.id];
+    if (cb) {
+      delete aiPendingRequests[e.data.id];
+      cb(e.data.error || null, e.data.text || null);
+    }
+  }
+});
+
+function aiCallClaude(system, messages, apiKey, callback) {
+  var id = 'req-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+  aiPendingRequests[id] = callback;
+  var iframe = aiGetIframe();
+  // Wait for iframe to be ready then send
+  var attempts = 0;
+  var trySend = function() {
+    if (attempts++ > 20) { callback('Iframe not ready', null); return; }
+    try {
+      iframe.contentWindow.postMessage({
+        type: 'CLW_AI_REQUEST',
+        id: id,
+        key: apiKey,
+        system: system,
+        messages: messages
+      }, '*');
+    } catch(e) {
+      setTimeout(trySend, 100);
+    }
+  };
+  setTimeout(trySend, 200);
+}
+
+/* ── Panel open/close ── */
 function aiOpenPanel() {
-  var panel  = document.getElementById('ai-panel');
-  var clear  = document.getElementById('search-clear');
+  var panel = document.getElementById('ai-panel');
+  var clear = document.getElementById('search-clear');
   if (!panel) return;
   panel.style.display = 'flex';
   panel.style.flexDirection = 'column';
   if (clear) clear.style.display = 'block';
   aiPanelOpen = true;
-  // Show welcome + suggestions if first open
   var msgs = document.getElementById('ai-messages');
-  if (msgs && !msgs.children.length) {
-    aiShowWelcome();
-  }
+  if (msgs && !msgs.children.length) aiShowWelcome();
 }
 
 function aiShowWelcome() {
   var msgs = document.getElementById('ai-messages');
   if (!msgs) return;
   msgs.innerHTML = '';
-  // Welcome bubble
   var welcome = document.createElement('div');
   welcome.className = 'ai-msg bot';
   welcome.innerHTML = '<div class="ai-avatar bot">CLW</div>'
     + '<div class="ai-bubble bot"><strong>CLW Hub Assistant</strong><br>'
-    + 'Ask me anything about CLW processes, projects, fees or the SOP. I know your live data.</div>';
+    + 'Ask me anything about CLW processes, projects, fees or the SOP.</div>';
   msgs.appendChild(welcome);
-  // Suggestion buttons — use data-index to avoid quote issues
   var sugWrap = document.createElement('div');
   sugWrap.className = 'ai-suggest';
   sugWrap.id = 'ai-suggest-wrap';
@@ -1883,21 +1960,18 @@ function aiShowWelcome() {
     var btn = document.createElement('button');
     btn.className = 'ai-suggest-btn';
     btn.textContent = q;
-    btn.setAttribute('data-q', i);
-    btn.onclick = function() { aiAskDirect(AI_SUGGESTIONS[+this.getAttribute('data-q')]); };
+    btn.onclick = function() { aiAskDirect(q); };
     sugWrap.appendChild(btn);
   });
   msgs.appendChild(sugWrap);
 }
 
-/* ── Add message bubble ── */
 function aiAddMessage(role, html) {
   var msgs = document.getElementById('ai-messages');
   if (!msgs) return;
-  // Remove suggestions when user asks something
   var sug = document.getElementById('ai-suggest-wrap');
   if (sug && role === 'user') sug.remove();
-  var initials = role === 'bot' ? 'CLW' : ((typeof syncCurrentUser !== 'undefined' && syncCurrentUser) ? syncCurrentUser.slice(0,2).toUpperCase() : 'ME');
+  var initials = role==='bot' ? 'CLW' : ((typeof syncCurrentUser!=='undefined'&&syncCurrentUser)?syncCurrentUser.slice(0,2).toUpperCase():'ME');
   var div = document.createElement('div');
   div.className = 'ai-msg ' + role;
   div.innerHTML = '<div class="ai-avatar ' + role + '">' + initials + '</div>'
@@ -1906,144 +1980,11 @@ function aiAddMessage(role, html) {
   msgs.scrollTop = msgs.scrollHeight;
 }
 
-/* ── Ask ── */
-function aiAskDirect(q) {
-  var input = document.getElementById('search-input');
-  if (input) input.value = q;
-  aiOpenPanel();
-  aiAsk();
-}
-
-async function aiAsk() {
-  var input = document.getElementById('search-input');
-  var q = input ? input.value.trim() : '';
-  if (!q || aiIsThinking) return;
-
-  aiOpenPanel();
-  aiAddMessage('user', escH(q));
-  if (input) input.value = '';
-
-  aiHistory.push({ role: 'user', content: q });
-
-  // Show typing
-  var typing = document.getElementById('ai-typing');
-  if (typing) { typing.style.display = 'flex'; }
-  var msgs = document.getElementById('ai-messages');
-  if (msgs) msgs.scrollTop = msgs.scrollHeight;
-
-  var btn = document.getElementById('ai-search-btn');
-  if (btn) { btn.disabled = true; btn.textContent = '…'; }
-  aiIsThinking = true;
-
-  try {
-    // Check API key is set
-    if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'YOUR_API_KEY_HERE') {
-      if (typing) typing.style.display = 'none';
-      aiAddMessage('bot', '<strong>API key not set.</strong><br>Ask Andrea to add the Anthropic API key to the Hub. Get it from <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--navy)">console.anthropic.com</a>.');
-      if (btn) { btn.disabled = false; btn.textContent = 'Ask'; }
-      aiIsThinking = false;
-      return;
-    }
-
-    var resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 800,
-        system: aiGetContext(),
-        messages: aiHistory.slice(-8)
-      })
-    });
-    var data = await resp.json();
-    if (!resp.ok) {
-      var errMsg = (data.error && data.error.message) ? data.error.message : ('HTTP ' + resp.status);
-      throw new Error(errMsg);
-    }
-    var answer = (data.content && data.content[0]) ? data.content[0].text : 'Sorry, no response received.';
-    aiHistory.push({ role: 'assistant', content: answer });
-    if (typing) typing.style.display = 'none';
-    aiAddMessage('bot', aiFormat(answer));
-  } catch(e) {
-    if (typing) typing.style.display = 'none';
-    aiAddMessage('bot', '<span style="color:var(--red)">⚠ ' + escH(e.message || 'Could not reach AI. Check connection.') + '</span>');
-    console.error('AI error:', e);
-  }
-
-  if (btn) { btn.disabled = false; btn.textContent = 'Ask'; }
-  aiIsThinking = false;
-}
-
-/* ── Format response ── */
-function aiFormat(text) {
-  var html = text
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>')
-    .replace(/\*([^*\n]+)\*/g,'<em>$1</em>')
-    .replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>')
-    .replace(/^[-•]\s+(.+)$/gm,'<li>$1</li>')
-    .replace(/^(\d+)\.\s+(.+)$/gm,'<li><strong>$1.</strong> $2</li>')
-    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-    .replace(/\n\n/g,'<br><br>')
-    .replace(/\n/g,'<br>');
-
-  // Wrap consecutive <li> items in <ul>
-  html = html.replace(/(<li>(?:(?!<\/ul>).)*<\/li>(?:<br>)?)+/g, function(m) {
-    return '<ul>' + m.replace(/<br>/g,'') + '</ul>';
-  });
-
-  // Make tab references clickable
-  var tabMap = [
-    ['projects tab','projects'],['project tab','projects'],
-    ['l10 tab','l10'],['l10 meeting','l10'],
-    ['timesheet tab','timesheet'],['timesheet','timesheet'],
-    ['fee calculator','fee'],['fee calc','fee'],
-    ['services tab','services'],
-    ['dashboard tab','forecast'],['forecast tab','forecast'],
-    ['hr &amp; finance','hr'],['hr and finance','hr'],
-    ['appointment tab','appointment'],
-    ['close-out tab','closeout'],['close-out','closeout'],
-    ['team tab','team'],
-    ['enquiry','enquiry'],
-    ['core systems','systems'],
-    ['overview tab','overview'],
-  ];
-  tabMap.forEach(function(pair) {
-    var label = pair[0], tabId = pair[1];
-    var re = new RegExp('(' + label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
-    html = html.replace(re, '<a class="ai-link" onclick="aiGoTab(\'' + tabId + '\')" title="Open ' + label + '">$1&nbsp;↗</a>');
-  });
-
-  return html;
-}
-
-function aiGoTab(tabId) {
-  var btn = document.querySelector('[onclick*="showTab(\'' + tabId + '\'"]');
-  if (!btn) btn = document.querySelector('[onclick*="showTab(\''+tabId+'\'"]');
-  if (btn) showTab(tabId, btn);
-  var panel = document.getElementById('ai-panel');
-  if (panel) panel.style.display = 'none';
-  aiPanelOpen = false;
-}
-
-/* ── Keyboard ── */
-function aiSearchKeydown(e) {
-  if (e.key === 'Enter')  { e.preventDefault(); aiAsk(); return; }
-  if (e.key === 'Escape') { clearSearch(); return; }
-  aiOpenPanel();
-}
-
-/* ── Clear / close ── */
 function clearSearch() {
   var input = document.getElementById('search-input');
   var panel = document.getElementById('ai-panel');
   var clear = document.getElementById('search-clear');
-  if (input) { input.value = ''; }
+  if (input) input.value = '';
   if (panel) panel.style.display = 'none';
   if (clear) clear.style.display = 'none';
   aiPanelOpen = false;
@@ -2052,7 +1993,19 @@ function clearSearch() {
   if (msgs) msgs.innerHTML = '';
 }
 
-/* ── Close on outside click ── */
+function aiAskDirect(q) {
+  var input = document.getElementById('search-input');
+  if (input) input.value = q;
+  aiOpenPanel();
+  aiAsk();
+}
+
+function aiSearchKeydown(e) {
+  if (e.key === 'Enter')  { e.preventDefault(); aiAsk(); return; }
+  if (e.key === 'Escape') { clearSearch(); return; }
+  aiOpenPanel();
+}
+
 document.addEventListener('click', function(e) {
   if (!aiPanelOpen) return;
   var wrap = document.getElementById('ai-search-wrap');
@@ -2063,11 +2016,150 @@ document.addEventListener('click', function(e) {
   }
 });
 
-/* ── Open on input focus ── */
-document.addEventListener('DOMContentLoaded', function() {
+/* ── Main ask function ── */
+function aiAsk() {
   var input = document.getElementById('search-input');
-  if (input) input.addEventListener('focus', function() { aiOpenPanel(); });
+  var q = input ? input.value.trim() : '';
+  if (!q || aiIsThinking) return;
+
+  aiOpenPanel();
+  aiAddMessage('user', escH(q));
+  if (input) input.value = '';
+  aiHistory.push({ role: 'user', content: q });
+
+  var typing = document.getElementById('ai-typing');
+  if (typing) { typing.style.display = 'flex'; }
+  var msgs = document.getElementById('ai-messages');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+
+  var btn = document.getElementById('ai-search-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  aiIsThinking = true;
+
+  // Get API key from variable
+  var key = (typeof ANTHROPIC_API_KEY !== 'undefined') ? ANTHROPIC_API_KEY : '';
+  if (!key || key === 'YOUR_API_KEY_HERE') {
+    if (typing) typing.style.display = 'none';
+    aiAddMessage('bot',
+      '<strong>API key needed.</strong><br>'
+      + '1. Go to <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--navy);text-decoration:underline">console.anthropic.com</a><br>'
+      + '2. Create a key, copy it<br>'
+      + '3. In the HTML file find <code>YOUR_API_KEY_HERE</code> and replace it with your key<br>'
+      + '4. Re-upload to GitHub'
+    );
+    if (btn) { btn.disabled = false; btn.textContent = 'Ask'; }
+    aiIsThinking = false;
+    return;
+  }
+
+  // Use direct fetch (works on github.io with correct headers)
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 600,
+      system: aiGetContext(),
+      messages: aiHistory.slice(-8)
+    })
+  })
+  .then(function(resp) { return resp.json().then(function(d) { return {ok:resp.ok, data:d}; }); })
+  .then(function(result) {
+    if (typing) typing.style.display = 'none';
+    if (!result.ok) {
+      var msg = (result.data.error && result.data.error.message) ? result.data.error.message : ('Error ' + result.status);
+      aiAddMessage('bot', '<span style="color:var(--red)">⚠ ' + escH(msg) + '</span>');
+    } else {
+      var answer = (result.data.content && result.data.content[0]) ? result.data.content[0].text : 'No response.';
+      aiHistory.push({ role: 'assistant', content: answer });
+      aiAddMessage('bot', aiFormat(answer));
+    }
+  })
+  .catch(function(err) {
+    if (typing) typing.style.display = 'none';
+    // CORS error — show helpful message
+    var errText = err.message || 'Network error';
+    if (errText.toLowerCase().indexOf('cors') > -1 || errText.toLowerCase().indexOf('fetch') > -1 || errText.toLowerCase().indexOf('failed') > -1) {
+      aiAddMessage('bot',
+        '<strong>Connection blocked by browser (CORS).</strong><br>'
+        + 'The Anthropic API cannot be called directly from GitHub Pages.<br><br>'
+        + '<strong>Solutions:</strong><br>'
+        + '• Open the Hub from <strong>localhost</strong> instead (run a local server)<br>'
+        + '• Or: use a proxy service like <a href="https://workers.cloudflare.com" target="_blank" style="color:var(--navy);text-decoration:underline">Cloudflare Workers</a> as a relay<br>'
+        + '• Or: host the Hub on a server that can make server-side API calls'
+      );
+    } else {
+      aiAddMessage('bot', '<span style="color:var(--red)">⚠ ' + escH(errText) + '</span>');
+    }
+  })
+  .finally(function() {
+    if (btn) { btn.disabled = false; btn.textContent = 'Ask'; }
+    aiIsThinking = false;
+  });
+}
+
+/* ── Format response ── */
+function aiFormat(text) {
+  var html = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*([^*\n]+)\*/g,'<em>$1</em>')
+    .replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>')
+    .replace(/^[-•]\s+(.+)$/gm,'<li>$1</li>')
+    .replace(/^(\d+)\.\s+(.+)$/gm,'<li>$2</li>')
+    .replace(/\n\n/g,'<br><br>')
+    .replace(/\n/g,'<br>');
+  // Wrap li blocks
+  html = html.replace(/(<li>[^<]*<\/li>(<br>)?)+/g, function(m){
+    return '<ul>' + m.replace(/<br>/g,'') + '</ul>';
+  });
+  // Clickable tab links
+  var tabs = [
+    ['projects tab','projects'],['project tab','projects'],
+    ['l10 tab','l10'],['l10','l10'],
+    ['timesheet','timesheet'],
+    ['fee calculator','fee'],
+    ['services tab','services'],['services','services'],
+    ['dashboard','forecast'],
+    ['hr &amp; finance','hr'],
+    ['appointment','appointment'],
+    ['close-out','closeout'],
+    ['team tab','team'],
+    ['fee proposal','enquiry'],['enquiry','enquiry'],
+  ];
+  tabs.forEach(function(t) {
+    var re = new RegExp('(?<![>\\w])(' + t[0].replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')(?![\\w<])', 'gi');
+    html = html.replace(re, '<a class="ai-link" onclick="aiGoTab(\'' + t[1] + '\')">$1 ↗</a>');
+  });
+  return html;
+}
+
+function aiGoTab(tabId) {
+  var btn = document.querySelector('.nav-btn[onclick*="\'' + tabId + '\'"]');
+  if (btn) showTab(tabId, btn);
+  var panel = document.getElementById('ai-panel');
+  if (panel) panel.style.display = 'none';
+  aiPanelOpen = false;
+}
+
+// Pre-init iframe on load for faster first response
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    var input = document.getElementById('search-input');
+    if (input) input.addEventListener('focus', function() { aiOpenPanel(); });
+    // Pre-warm iframe
+    if (typeof ANTHROPIC_API_KEY !== 'undefined' && ANTHROPIC_API_KEY !== 'YOUR_API_KEY_HERE') {
+      aiGetIframe();
+    }
+  }, 1000);
 });
+
+var ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
 
 
 
