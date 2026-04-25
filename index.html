@@ -527,11 +527,11 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
 
   /* ── AI SEARCH ASSISTANT ── */
   .ai-search-wrap{position:relative;width:100%}
-  .ai-search-inner{display:flex;align-items:center;gap:0;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:0 6px 0 16px;transition:all .2s}
-  .ai-search-inner:focus-within{background:rgba(255,255,255,.14);border-color:var(--gold)}
-  .ai-search-icon{font-size:14px;margin-right:4px;opacity:.7;flex-shrink:0}
-  .search-input{flex:1;background:none;border:none;outline:none;color:#fff;font-family:var(--fb);font-size:13px;padding:8px 4px;min-width:0}
-  .search-input::placeholder{color:rgba(255,255,255,.4)}
+  .ai-search-inner{display:flex;align-items:center;gap:0;background:#ffffff;border:1px solid var(--border);border-radius:24px;padding:0 6px 0 16px;transition:all .2s}
+  .ai-search-inner:focus-within{background:#ffffff;border-color:var(--gold);box-shadow:0 0 0 3px rgba(193,154,73,.15)}
+  .ai-search-icon{font-size:14px;margin-right:4px;opacity:.5;flex-shrink:0;color:var(--navy)}
+  .search-input{flex:1;background:none;border:none;outline:none;color:var(--navy);font-family:var(--fb);font-size:13px;padding:8px 4px;min-width:0}
+  .search-input::placeholder{color:rgba(27,50,82,.4)}
   .ai-search-btn{background:var(--gold);color:#fff;border:none;border-radius:18px;padding:5px 14px;font-family:var(--ff);font-size:11px;font-weight:600;letter-spacing:.06em;cursor:pointer;flex-shrink:0;transition:opacity .15s;margin-left:4px}
   .ai-search-btn:hover{opacity:.85}
   .ai-search-btn:disabled{opacity:.4;cursor:not-allowed}
@@ -1802,7 +1802,10 @@ var aiHistory    = [];
 var aiIsThinking = false;
 var aiPanelOpen  = false;
 
-var AI_SUGGESTIONS = [
+// ── Anthropic API key — get from console.anthropic.com/settings/keys ──
+var ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
+
+
   'How do I raise an AFP?',
   'What is the fee proposal process?',
   'Which projects are over budget?',
@@ -1933,9 +1936,23 @@ async function aiAsk() {
   aiIsThinking = true;
 
   try {
+    // Check API key is set
+    if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'YOUR_API_KEY_HERE') {
+      if (typing) typing.style.display = 'none';
+      aiAddMessage('bot', '<strong>API key not set.</strong><br>Ask Andrea to add the Anthropic API key to the Hub. Get it from <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--navy)">console.anthropic.com</a>.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Ask'; }
+      aiIsThinking = false;
+      return;
+    }
+
     var resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 800,
@@ -1944,13 +1961,18 @@ async function aiAsk() {
       })
     });
     var data = await resp.json();
+    if (!resp.ok) {
+      var errMsg = (data.error && data.error.message) ? data.error.message : ('HTTP ' + resp.status);
+      throw new Error(errMsg);
+    }
     var answer = (data.content && data.content[0]) ? data.content[0].text : 'Sorry, no response received.';
     aiHistory.push({ role: 'assistant', content: answer });
     if (typing) typing.style.display = 'none';
     aiAddMessage('bot', aiFormat(answer));
   } catch(e) {
     if (typing) typing.style.display = 'none';
-    aiAddMessage('bot', '<span style="color:var(--red)">Could not reach AI. Check connection.</span>');
+    aiAddMessage('bot', '<span style="color:var(--red)">⚠ ' + escH(e.message || 'Could not reach AI. Check connection.') + '</span>');
+    console.error('AI error:', e);
   }
 
   if (btn) { btn.disabled = false; btn.textContent = 'Ask'; }
