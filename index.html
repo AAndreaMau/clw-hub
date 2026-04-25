@@ -1795,70 +1795,13 @@ function fmtN(n){return Math.round(n||0).toLocaleString('en-GB');}
 /* ── SEARCH ── */
 
 /* ═══════════════════════════════════════════════════════════
-   CLW AI ASSISTANT
-   Powered by Claude — answers questions about CLW processes,
-   projects, fees, and the SOP in plain English
+   CLW AI ASSISTANT v2
 ═══════════════════════════════════════════════════════════ */
 
-var aiHistory = [];       // conversation history for context
+var aiHistory    = [];
 var aiIsThinking = false;
+var aiPanelOpen  = false;
 
-// ── Build context from live Hub data ─────────────────────────
-function aiGetContext() {
-  var ctx = [];
-
-  ctx.push('You are the CLW Hub Assistant — an expert on CLW Consulting\'s waterproofing and construction risk consultancy processes.');
-  ctx.push('CLW Consulting is a specialist UK waterproofing consultancy based in Bedford. Services include BS 8102, podium decks, below-ground waterproofing, and construction risk assessment.');
-  ctx.push('Team: Ben Hickman (Technical Director/Visionary — technical oversight, fee proposals, BD, marketing), Andrea Maugeri (Practice Director/Integrator — operations, invoicing, team management, SOP), Johnny Etkind (Senior WP Consultant — design, drawings, Stage 2-6), Adam Leatherdale (Design Manager — CAD, drawings, Stage 2-6), Laura Etkind (PA and Marketing support).');
-  ctx.push('RIBA Stages used: 0 (Familiarisation), 2 (Concept), 3 (Spatial Coordination), 4a (Technical Design Outline), 4b (Technical Design Detailed), 5 (Construction), 6/7 (Close-Out).');
-  ctx.push('Fee structure: Hourly rate £198, Meeting rate £660. Payment terms typically On Completion or Monthly.');
-
-  // Live projects summary
-  if (typeof projects !== 'undefined' && projects.length) {
-    var active = projects.filter(function(p) { return p.status === 'Active'; });
-    var overspend = projects.filter(function(p) {
-      return p.harvestSpent > p.harvestBudget * 1.05 && p.harvestBudget > 0;
-    });
-    ctx.push('LIVE PROJECTS: ' + active.length + ' active projects. ' +
-      'Active projects include: ' + active.slice(0,8).map(function(p){return p.name;}).join(', ') + '.');
-    if (overspend.length) {
-      ctx.push('OVERSPEND PROJECTS: ' + overspend.map(function(p){
-        var pct = Math.round(p.harvestSpent/p.harvestBudget*100);
-        return p.name + ' (' + pct + '% spent)';
-      }).join(', ') + '.');
-    }
-  }
-
-  // L10 current week
-  if (typeof l10Data !== 'undefined') {
-    var weeks = Object.keys(l10Data);
-    if (weeks.length) {
-      var latest = l10Data[weeks[weeks.length-1]];
-      if (latest && latest.liveJobs) {
-        ctx.push('L10 LIVE JOBS THIS WEEK: ' + latest.liveJobs.slice(0,6).map(function(j){
-          return j.name + ' (owner: ' + j.l10Owner + ', feedback: ' + j.feedback + ')';
-        }).join('; ') + '.');
-      }
-    }
-  }
-
-  // Forecast summary
-  if (typeof dashProjects !== 'undefined' && dashProjects.length) {
-    var now = new Date();
-    var curYM = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
-    var thisMonth = dashProjects.reduce(function(s,p){
-      return s + ((p.fees && p.fees[curYM]) ? +p.fees[curYM] : 0);
-    }, 0);
-    ctx.push('FORECAST: Total ' + dashProjects.length + ' projects in forecast. This month projected: £' + Math.round(thisMonth).toLocaleString('en-GB') + '.');
-  }
-
-  ctx.push('The Hub has tabs: Overview (process flow), Core Systems (IT/software), HR & Finance, Marketing, Enquiry→Fee, Appointment, Services (RIBA stages SOP), Close-Out, Team (EOS chart), L10 (weekly meeting), Projects (project management), Timesheet, Dashboard (forecast/pipeline/scorecard), Fee Calculator.');
-  ctx.push('When answering: be concise and practical. Reference specific Hub tabs, team members, or projects where relevant. Use bullet points for processes. If the user asks where to find something, tell them exactly which tab and section. If they ask about a project, refer to the Projects tab. If they ask about fees, the Fee Calculator tab has all services selectable by RIBA stage.');
-
-  return ctx.join('\n');
-}
-
-// ── Suggested questions shown on open ────────────────────────
 var AI_SUGGESTIONS = [
   'How do I raise an AFP?',
   'What is the fee proposal process?',
@@ -1866,103 +1809,105 @@ var AI_SUGGESTIONS = [
   'How does BS 8102 apply to Stage 2?',
   'What should happen at Close-Out?',
   'How do I set up a new project?',
-  'What is CLW\'s waterproofing assessment process?',
   'Who is responsible for invoicing?',
+  'What is our waterproofing assessment process?'
 ];
 
-// ── Render ────────────────────────────────────────────────────
-function aiRenderSuggestions() {
-  var panel = document.getElementById('ai-panel');
-  var msgs  = document.getElementById('ai-messages');
-  if (!msgs) return;
+/* ── Build context from live Hub data ── */
+function aiGetContext() {
+  var lines = [];
+  lines.push("You are the CLW Hub Assistant — an expert on CLW Consulting's processes, projects and SOP.");
+  lines.push("CLW Consulting is a specialist UK waterproofing consultancy. Services: BS 8102, podium decks, below-ground waterproofing, construction risk.");
+  lines.push("Team: Ben Hickman (Technical Director — technical oversight, fee proposals, BD, marketing), Andrea Maugeri (Practice Director — operations, invoicing, SOP, team management), Johnny Etkind (Senior WP Consultant — design, drawings, Stage 2-6), Adam Leatherdale (Design Manager — CAD, Stage 2-6), Laura Etkind (PA and Marketing).");
+  lines.push("RIBA Stages: 0=Familiarisation, 2=Concept, 3=Spatial Coordination, 4a=Technical Design Outline, 4b=Technical Design Detailed, 5=Construction, 6/7=Close-Out.");
+  lines.push("Fees: Hourly rate £198, Meeting rate £660. AFP = Application for Payment.");
+  lines.push("Hub tabs: Overview, Core Systems, HR & Finance, Marketing, Enquiry→Fee, Appointment, Services (RIBA SOP), Close-Out, Team, L10 (weekly meeting), Projects, Timesheet, Dashboard (forecast/pipeline/scorecard), Fee Calculator.");
 
-  // Welcome message
-  msgs.innerHTML = '';
-  aiAddMessage('bot',
-    '<h4>CLW Hub Assistant</h4>' +
-    'I know your projects, processes, fees and SOP. Ask me anything about how CLW works, where to find something, or what to do next.',
-    false
-  );
-
-  // Suggestion chips
-  var suggest = document.createElement('div');
-  suggest.className = 'ai-suggest';
-  suggest.innerHTML = AI_SUGGESTIONS.map(function(q) {
-    return '<button class="ai-suggest-btn" onclick="aiAskDirect(' + JSON.stringify(q) + ')">' + q + '</button>';
-  }).join('');
-  panel.appendChild(suggest);
+  if (typeof projects !== 'undefined' && projects.length) {
+    var active = projects.filter(function(p){ return p.status==='Active'; });
+    var over = projects.filter(function(p){
+      return p.harvestSpent > p.harvestBudget*1.05 && p.harvestBudget > 0;
+    });
+    lines.push("ACTIVE PROJECTS (" + active.length + "): " + active.slice(0,8).map(function(p){return p.name;}).join(', ') + ".");
+    if (over.length) {
+      lines.push("OVERSPEND: " + over.map(function(p){
+        return p.name + " (" + Math.round(p.harvestSpent/p.harvestBudget*100) + "%)";
+      }).join(', ') + ".");
+    }
+  }
+  if (typeof dashProjects !== 'undefined' && dashProjects.length) {
+    var now = new Date();
+    var ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+    var thisM = dashProjects.reduce(function(s,p){ return s+((p.fees&&p.fees[ym])?+p.fees[ym]:0); },0);
+    lines.push("FORECAST this month: £" + Math.round(thisM).toLocaleString('en-GB') + " across " + dashProjects.length + " projects.");
+  }
+  lines.push("Answer concisely and practically. Reference specific Hub tabs when relevant. Use bullet points for processes. If asked where to find something, name the exact tab.");
+  return lines.join('\n');
 }
 
-function aiAddMessage(role, html, scroll) {
-  var msgs = document.getElementById('ai-messages');
-  if (!msgs) return;
-  var initials = role === 'bot' ? 'CLW' : (syncCurrentUser ? syncCurrentUser.slice(0,2).toUpperCase() : 'ME');
-  var div = document.createElement('div');
-  div.className = 'ai-msg ' + role;
-  div.innerHTML = '<div class="ai-avatar ' + role + '">' + initials + '</div>' +
-                  '<div class="ai-bubble ' + role + '">' + html + '</div>';
-  msgs.appendChild(div);
-  if (scroll !== false) msgs.scrollTop = msgs.scrollHeight;
-}
-
-// ── Open/close panel ──────────────────────────────────────────
+/* ── Open panel ── */
 function aiOpenPanel() {
-  var panel = document.getElementById('ai-panel');
-  var input = document.getElementById('search-input');
+  var panel  = document.getElementById('ai-panel');
   var clear  = document.getElementById('search-clear');
   if (!panel) return;
   panel.style.display = 'flex';
   panel.style.flexDirection = 'column';
   if (clear) clear.style.display = 'block';
-  if (!document.getElementById('ai-messages').children.length) {
-    aiRenderSuggestions();
-  }
-}
-
-function clearSearch() {
-  var input  = document.getElementById('search-input');
-  var panel  = document.getElementById('ai-panel');
-  var clear  = document.getElementById('search-clear');
-  var typing = document.getElementById('ai-typing');
-  if (input)  { input.value = ''; input.blur(); }
-  if (panel)  panel.style.display = 'none';
-  if (clear)  clear.style.display = 'none';
-  if (typing) typing.style.display = 'none';
-  // Clear history on close so next session starts fresh
-  aiHistory = [];
+  aiPanelOpen = true;
+  // Show welcome + suggestions if first open
   var msgs = document.getElementById('ai-messages');
-  if (msgs) msgs.innerHTML = '';
-  // Remove suggestion div
-  var panel2 = document.getElementById('ai-panel');
-  if (panel2) {
-    var sug = panel2.querySelector('.ai-suggest');
-    if (sug) sug.remove();
+  if (msgs && !msgs.children.length) {
+    aiShowWelcome();
   }
 }
 
-function aiSearchKeydown(e) {
-  if (e.key === 'Enter') { aiAsk(); return; }
-  if (e.key === 'Escape') { clearSearch(); return; }
-  if (e.key === 'Tab') return;
-  // Open panel on first keystroke
-  aiOpenPanel();
+function aiShowWelcome() {
+  var msgs = document.getElementById('ai-messages');
+  if (!msgs) return;
+  msgs.innerHTML = '';
+  // Welcome bubble
+  var welcome = document.createElement('div');
+  welcome.className = 'ai-msg bot';
+  welcome.innerHTML = '<div class="ai-avatar bot">CLW</div>'
+    + '<div class="ai-bubble bot"><strong>CLW Hub Assistant</strong><br>'
+    + 'Ask me anything about CLW processes, projects, fees or the SOP. I know your live data.</div>';
+  msgs.appendChild(welcome);
+  // Suggestion buttons — use data-index to avoid quote issues
+  var sugWrap = document.createElement('div');
+  sugWrap.className = 'ai-suggest';
+  sugWrap.id = 'ai-suggest-wrap';
+  AI_SUGGESTIONS.forEach(function(q, i) {
+    var btn = document.createElement('button');
+    btn.className = 'ai-suggest-btn';
+    btn.textContent = q;
+    btn.setAttribute('data-q', i);
+    btn.onclick = function() { aiAskDirect(AI_SUGGESTIONS[+this.getAttribute('data-q')]); };
+    sugWrap.appendChild(btn);
+  });
+  msgs.appendChild(sugWrap);
 }
 
-// Close panel on outside click
-document.addEventListener('click', function(e) {
-  var wrap = document.getElementById('ai-search-wrap');
-  if (wrap && !wrap.contains(e.target)) {
-    var panel = document.getElementById('ai-panel');
-    if (panel && panel.style.display !== 'none') {
-      panel.style.display = 'none';
-    }
-  }
-});
+/* ── Add message bubble ── */
+function aiAddMessage(role, html) {
+  var msgs = document.getElementById('ai-messages');
+  if (!msgs) return;
+  // Remove suggestions when user asks something
+  var sug = document.getElementById('ai-suggest-wrap');
+  if (sug && role === 'user') sug.remove();
+  var initials = role === 'bot' ? 'CLW' : ((typeof syncCurrentUser !== 'undefined' && syncCurrentUser) ? syncCurrentUser.slice(0,2).toUpperCase() : 'ME');
+  var div = document.createElement('div');
+  div.className = 'ai-msg ' + role;
+  div.innerHTML = '<div class="ai-avatar ' + role + '">' + initials + '</div>'
+    + '<div class="ai-bubble ' + role + '">' + html + '</div>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
 
-// ── Ask ───────────────────────────────────────────────────────
+/* ── Ask ── */
 function aiAskDirect(q) {
   var input = document.getElementById('search-input');
   if (input) input.value = q;
+  aiOpenPanel();
   aiAsk();
 }
 
@@ -1972,142 +1917,136 @@ async function aiAsk() {
   if (!q || aiIsThinking) return;
 
   aiOpenPanel();
-
-  // Remove suggestion chips
-  var panel = document.getElementById('ai-panel');
-  var sug = panel ? panel.querySelector('.ai-suggest') : null;
-  if (sug) sug.remove();
-
-  // Show user message
   aiAddMessage('user', escH(q));
   if (input) input.value = '';
-  var clear = document.getElementById('search-clear');
-  if (clear) clear.style.display = 'block';
 
-  // Add to history
   aiHistory.push({ role: 'user', content: q });
 
-  // Show typing indicator
+  // Show typing
   var typing = document.getElementById('ai-typing');
-  if (typing) typing.style.display = 'flex';
+  if (typing) { typing.style.display = 'flex'; }
+  var msgs = document.getElementById('ai-messages');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
 
-  // Disable button
   var btn = document.getElementById('ai-search-btn');
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
   aiIsThinking = true;
 
   try {
-    var systemPrompt = aiGetContext();
-
-    // Keep last 6 turns of history for context
-    var msgs = aiHistory.slice(-6);
-
     var resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: msgs
+        max_tokens: 800,
+        system: aiGetContext(),
+        messages: aiHistory.slice(-8)
       })
     });
-
     var data = await resp.json();
-    var answer = data.content && data.content[0] ? data.content[0].text : 'Sorry, I couldn\'t get a response.';
-
-    // Add to history
+    var answer = (data.content && data.content[0]) ? data.content[0].text : 'Sorry, no response received.';
     aiHistory.push({ role: 'assistant', content: answer });
-
-    // Format the answer
-    var formatted = aiFormat(answer, q);
-
-    // Hide typing and show response
     if (typing) typing.style.display = 'none';
-    aiAddMessage('bot', formatted);
-
+    aiAddMessage('bot', aiFormat(answer));
   } catch(e) {
     if (typing) typing.style.display = 'none';
-    aiAddMessage('bot', '<span style="color:var(--red)">Could not reach the AI service. Check your connection and try again.</span>');
-    console.error('AI error:', e);
+    aiAddMessage('bot', '<span style="color:var(--red)">Could not reach AI. Check connection.</span>');
   }
 
   if (btn) { btn.disabled = false; btn.textContent = 'Ask'; }
   aiIsThinking = false;
 }
 
-// ── Format AI response into rich HTML ─────────────────────────
-function aiFormat(text, query) {
-  // Convert markdown-style formatting
-  var html = escH(text);
+/* ── Format response ── */
+function aiFormat(text) {
+  var html = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*([^*\n]+)\*/g,'<em>$1</em>')
+    .replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>')
+    .replace(/^[-•]\s+(.+)$/gm,'<li>$1</li>')
+    .replace(/^(\d+)\.\s+(.+)$/gm,'<li><strong>$1.</strong> $2</li>')
+    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+    .replace(/\n\n/g,'<br><br>')
+    .replace(/\n/g,'<br>');
 
-  // Bold **text**
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Wrap consecutive <li> items in <ul>
+  html = html.replace(/(<li>(?:(?!<\/ul>).)*<\/li>(?:<br>)?)+/g, function(m) {
+    return '<ul>' + m.replace(/<br>/g,'') + '</ul>';
+  });
 
-  // Italic _text_ or *text*
-  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
-
-  // Headers ### or ##
-  html = html.replace(/###\s*(.+)/g, '<h4>$1</h4>');
-  html = html.replace(/##\s*(.+)/g, '<h4>$1</h4>');
-
-  // Bullet lists
-  html = html.replace(/\n[-•]\s+/g, '\n<li>');
-  html = html.replace(/\n\d+\.\s+/g, '\n<li>');
-
-  // Wrap li items in ul
-  if (html.indexOf('<li>') > -1) {
-    html = html.replace(/((<li>[^\n]*\n?)+)/g, '<ul>$1</ul>');
-  }
-
-  // Line breaks
-  html = html.replace(/\n\n/g, '<br><br>');
-  html = html.replace(/\n/g, '<br>');
-
-  // Detect tab references and make them clickable
-  var tabMap = {
-    'projects tab': 'projects', 'project tab': 'projects',
-    'l10 tab': 'l10', 'l10': 'l10',
-    'timesheet': 'timesheet',
-    'fee calculator': 'fee', 'fee calc': 'fee',
-    'services tab': 'services', 'services': 'services',
-    'forecast': 'forecast', 'dashboard': 'forecast',
-    'hr & finance': 'hr', 'hr and finance': 'hr',
-    'appointment': 'appointment',
-    'close-out': 'closeout', 'closeout': 'closeout',
-    'marketing': 'marketing',
-    'team': 'team', 'team tab': 'team',
-    'enquiry': 'enquiry', 'enquiry → fee': 'enquiry',
-    'core systems': 'systems', 'overview': 'overview',
-  };
-
-  Object.keys(tabMap).forEach(function(label) {
-    var tabId = tabMap[label];
-    var regex = new RegExp('(?<!["\'])\\b(' + label.replace(/[-→]/g,'[-→]') + ')\\b(?!["\'])', 'gi');
-    html = html.replace(regex, '<a class="ai-link" onclick="aiGoTab(\'' + tabId + '\')" title="Go to ' + label + '">$1 ↗</a>');
+  // Make tab references clickable
+  var tabMap = [
+    ['projects tab','projects'],['project tab','projects'],
+    ['l10 tab','l10'],['l10 meeting','l10'],
+    ['timesheet tab','timesheet'],['timesheet','timesheet'],
+    ['fee calculator','fee'],['fee calc','fee'],
+    ['services tab','services'],
+    ['dashboard tab','forecast'],['forecast tab','forecast'],
+    ['hr &amp; finance','hr'],['hr and finance','hr'],
+    ['appointment tab','appointment'],
+    ['close-out tab','closeout'],['close-out','closeout'],
+    ['team tab','team'],
+    ['enquiry','enquiry'],
+    ['core systems','systems'],
+    ['overview tab','overview'],
+  ];
+  tabMap.forEach(function(pair) {
+    var label = pair[0], tabId = pair[1];
+    var re = new RegExp('(' + label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+    html = html.replace(re, '<a class="ai-link" onclick="aiGoTab(\'' + tabId + '\')" title="Open ' + label + '">$1&nbsp;↗</a>');
   });
 
   return html;
 }
 
 function aiGoTab(tabId) {
-  var btn = document.querySelector('.nav-btn[onclick*="\'' + tabId + '\'"]');
-  if (btn) { showTab(tabId, btn); }
-  // Close panel
+  var btn = document.querySelector('[onclick*="showTab(\'' + tabId + '\'"]');
+  if (!btn) btn = document.querySelector('[onclick*="showTab(\''+tabId+'\'"]');
+  if (btn) showTab(tabId, btn);
   var panel = document.getElementById('ai-panel');
   if (panel) panel.style.display = 'none';
+  aiPanelOpen = false;
 }
 
-// ── Focus opens panel ─────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
+/* ── Keyboard ── */
+function aiSearchKeydown(e) {
+  if (e.key === 'Enter')  { e.preventDefault(); aiAsk(); return; }
+  if (e.key === 'Escape') { clearSearch(); return; }
+  aiOpenPanel();
+}
+
+/* ── Clear / close ── */
+function clearSearch() {
   var input = document.getElementById('search-input');
-  if (input) {
-    input.addEventListener('focus', function() {
-      aiOpenPanel();
-    });
+  var panel = document.getElementById('ai-panel');
+  var clear = document.getElementById('search-clear');
+  if (input) { input.value = ''; }
+  if (panel) panel.style.display = 'none';
+  if (clear) clear.style.display = 'none';
+  aiPanelOpen = false;
+  aiHistory = [];
+  var msgs = document.getElementById('ai-messages');
+  if (msgs) msgs.innerHTML = '';
+}
+
+/* ── Close on outside click ── */
+document.addEventListener('click', function(e) {
+  if (!aiPanelOpen) return;
+  var wrap = document.getElementById('ai-search-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    var panel = document.getElementById('ai-panel');
+    if (panel) panel.style.display = 'none';
+    aiPanelOpen = false;
   }
 });
+
+/* ── Open on input focus ── */
+document.addEventListener('DOMContentLoaded', function() {
+  var input = document.getElementById('search-input');
+  if (input) input.addEventListener('focus', function() { aiOpenPanel(); });
+});
+
 
 
 var projects=[{"id":"h2-arkbolingbrokeac","name":"Ark Bolingbroke Academy","code":"20241025  SW11 6BF","address":"Ark Bolingbroke Academy","paymentTerms":"On Completion","status":"Active","notes":"Familiarisation with the scheme : \u00a31600 Tecjnical note to brief contractors : \u00a3600 Review of specialist waterproofing contractor's design & install : \u00a37275","dateWon":"","tasks":[{"id":"ht-arkbolingbroke","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":57,"hourlyRate":165.0,"fee":9475.0,"assignee":"JE","done":false}],"timeLogs":[{"id":"tl-0-arkbolin","rowId":"","taskId":"ht-arkbolingbroke","person":"JE","hrs":0.5,"date":"2026-01-02","task":"Review contractor proposals"},{"id":"tl-1-arkbolin","rowId":"","taskId":"ht-arkbolingbroke","person":"JE","hrs":0.5,"date":"2026-01-05","task":"Review contractor proposals"},{"id":"tl-2-arkbolin","rowId":"","taskId":"ht-arkbolingbroke","person":"JE","hrs":1.0,"date":"2026-01-06","task":"Review contractor proposals"},{"id":"tl-3-arkbolin","rowId":"","taskId":"ht-arkbolingbroke","person":"JE","hrs":0.5,"date":"2026-01-08","task":"Review contractor proposals"},{"id":"tl-4-arkbolin","rowId":"","taskId":"ht-arkbolingbroke","person":"JE","hrs":6.0,"date":"2026-01-13","task":"Review contractor proposals"},{"id":"tl-5-arkbolin","rowId":"","taskId":"ht-arkbolingbroke","person":"JE","hrs":0.5,"date":"2026-01-15","task":"Review contractor proposals"},{"id":"tl-6-arkbolin","rowId":"","taskId":"ht-arkbolingbroke","person":"JE","hrs":5.0,"date":"2026-01-30","task":"Review contractor proposals"},{"id":"tl-7-arkbolin","rowId":"","taskId":"ht-arkbolingbroke","person":"JE","hrs":1.0,"date":"2026-02-02","task":"Review contractor proposals"},{"id":"tl-8-arkbolin","rowId":"","taskId":"ht-arkbolingbroke","person":"JE","hrs":1.0,"date":"2026-02-05","task":"Review contractor proposals"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["JE"],"harvestBudget":9475.0,"harvestSpent":9690.0,"harvestInvoiced":8675.0,"harvestBillableHrs":60.5,"l10Feedback":"Not requested","l10Owner":"JE","l10Update":"Integritest report received. JE to review and issue final invoice \u2014 pushed to April."},{"id":"h2-1goldenlane","name":"1 Golden Lane","code":"","address":"Avasha Limited","paymentTerms":"On Completion","status":"Active","notes":"CLW Fee Proposal Design Stage Fee \"Phase 1\" RIBA Stage 0,1 & 2 \u00a312,500 \"Phase 2\" RIBA Stage 3 & 4 \u00a317,500 \"Phase 3\" RIBA Stage 5 \u00a34,200 Additional fee Additional site visits and resource during RIBA Stage 5 \u00a35,760 Total for stage 5 = \u00a39,960 \u00a339,960 1 Golden Lane (additional reviews) - 6250","dateWon":"","tasks":[{"id":"ht-1goldenlane","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":298,"hourlyRate":165.0,"fee":49210.0,"assignee":"BH","done":false}],"timeLogs":[],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["BH","AM"],"harvestBudget":49210.0,"harvestSpent":36747.5,"harvestInvoiced":11800.0,"harvestBillableHrs":286.5,"l10Feedback":"Not requested","l10Owner":"BH/AM","l10Update":"AM sent invoice with new tracker. Keep communication alive."},{"id":"h2-56thebishopsaven","name":"56 The Bishops Avenue","code":"","address":"BISHOP AVENUE PROPERTY LIMITED","paymentTerms":"On Completion","status":"Active","notes":"The Client \"Riverstone\" requires a specialist consultant to: Day Rate \u00a31,320, Capped at \u00a310,000 per month Total \u00a330,000 over 3 months Issue to ben.forbes@cast-consultancy.com and Rhea.Stephen@cast-consultancy.com by 3rd of the month Review the damage, understand the cause and provide an assessment Review the and monitor the drying of the damaged areas Review and comment on the design solutions to over the issue and the affected areas Review and monitor the works","dateWon":"2026-01-21","tasks":[{"id":"ht-56thebishopsav","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":182,"hourlyRate":165.0,"fee":30000.0,"assignee":"BH","done":false}],"timeLogs":[{"id":"tl-0-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Andrea","hrs":0.5,"date":"2026-01-19","task":"Condition Survey & Report"},{"id":"tl-1-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Andrea","hrs":0.5,"date":"2026-01-20","task":"Condition Survey & Report"},{"id":"tl-2-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":2.0,"date":"2026-01-21","task":"Condition Survey & Report"},{"id":"tl-3-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":4.0,"date":"2026-01-22","task":"Condition Survey & Report"},{"id":"tl-4-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Andrea","hrs":0.5,"date":"2026-01-22","task":"Condition Survey & Report"},{"id":"tl-5-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":2.0,"date":"2026-01-23","task":"Condition Survey & Report"},{"id":"tl-6-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":3.0,"date":"2026-01-27","task":"Condition Survey & Report"},{"id":"tl-7-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":1.0,"date":"2026-01-28","task":"Condition Survey & Report"},{"id":"tl-8-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":1.0,"date":"2026-01-28","task":"Condition Survey & Report"},{"id":"tl-9-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":2.0,"date":"2026-01-28","task":"Condition Survey & Report"},{"id":"tl-10-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":2.0,"date":"2026-01-30","task":"Condition Survey & Report"},{"id":"tl-11-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":6.0,"date":"2026-02-03","task":"Condition Survey & Report"},{"id":"tl-12-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":1.0,"date":"2026-02-03","task":"Condition Survey & Report"},{"id":"tl-13-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Ben","hrs":1.0,"date":"2026-02-03","task":"Condition Survey & Report"},{"id":"tl-14-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":8.0,"date":"2026-02-04","task":"Condition Survey & Report"},{"id":"tl-15-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":1.0,"date":"2026-02-05","task":"Condition Survey & Report"},{"id":"tl-16-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Ben","hrs":1.0,"date":"2026-02-05","task":"Condition Survey & Report"},{"id":"tl-17-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":1.0,"date":"2026-02-06","task":"Condition Survey & Report"},{"id":"tl-18-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Ben","hrs":0.5,"date":"2026-02-09","task":"Condition Survey & Report"},{"id":"tl-19-56thebis","rowId":"","taskId":"ht-56thebishopsav","person":"Adam","hrs":2.0,"date":"2026-02-10","task":"Condition Survey & Report"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["BH","AL","AM"],"harvestBudget":30000.0,"harvestSpent":7920.0,"harvestInvoiced":6600.0,"harvestBillableHrs":40.0,"l10Feedback":"Not requested","l10Owner":"BH/AL/AM","l10Update":"AM to stand down email pending."},{"id":"h2-8devonshiresquar","name":"8 Devonshire Square","code":"","address":"CG Cutlers Gardens","paymentTerms":"On Completion","status":"Active","notes":"Invoice details are as follows: CG Cutlers Gardens, c/o Nuveen Real Estate, 201 Bishopsgate, London, EC2M 3BN. Invoice to be issued to c.jackson@cogentbc.co.uk","dateWon":"","tasks":[{"id":"ht-8devonshiresqu","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":4,"hourlyRate":165.0,"fee":600.0,"assignee":"","done":false}],"timeLogs":[],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":[],"harvestBudget":600.0,"harvestSpent":660.0,"harvestInvoiced":600.0,"harvestBillableHrs":4.0,"l10Feedback":"Not requested","l10Owner":"","l10Update":""},{"id":"h2-ssd","name":"SSD","code":"","address":"City of London","paymentTerms":"On Completion","status":"Active","notes":"PO1007435","dateWon":"","tasks":[{"id":"ht-ssd","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":1033,"hourlyRate":165.0,"fee":170440.0,"assignee":"","done":false}],"timeLogs":[{"id":"tl-0-ssd","rowId":"","taskId":"ht-ssd","person":"Adam","hrs":1.0,"date":"2026-01-26","task":"RIBA 5"},{"id":"tl-1-ssd","rowId":"","taskId":"ht-ssd","person":"Adam","hrs":1.0,"date":"2026-02-23","task":"RIBA 5"},{"id":"tl-2-ssd","rowId":"","taskId":"ht-ssd","person":"Adam","hrs":2.0,"date":"2026-03-17","task":"RIBA 5"},{"id":"tl-3-ssd","rowId":"","taskId":"ht-ssd","person":"Adam","hrs":1.0,"date":"2026-03-23","task":"RIBA 5"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":[],"harvestBudget":170440.0,"harvestSpent":281937.5,"harvestInvoiced":74137.5,"harvestBillableHrs":2255.5,"l10Feedback":"Not requested","l10Owner":"","l10Update":""},{"id":"h2-britishmuseumbas","name":"British Museum - Basement Works","code":"","address":"Civic Engineers Limited","paymentTerms":"On Completion","status":"Active","notes":"PO-0078 Review of Tender Docs - \u00a35,280 CMT - \u00a313,200 Civic Engineers Limited Civic Engineers Carvers House 77 Dale Street Manchester Lancashire M1 2HG","dateWon":"","tasks":[{"id":"ht-britishmuseumb","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":112,"hourlyRate":165.0,"fee":18480.0,"assignee":"AL","done":false}],"timeLogs":[{"id":"tl-0-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Adam","hrs":4.0,"date":"2026-01-06","task":"Review Tender Documents"},{"id":"tl-1-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Andrea","hrs":0.5,"date":"2026-01-22","task":"RIBA 5"},{"id":"tl-2-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Adam","hrs":1.0,"date":"2026-01-23","task":"RIBA 5"},{"id":"tl-3-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Andrea","hrs":0.5,"date":"2026-01-26","task":"RIBA 5"},{"id":"tl-4-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Andrea","hrs":0.5,"date":"2026-01-28","task":"RIBA 5"},{"id":"tl-5-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Adam","hrs":3.0,"date":"2026-01-30","task":"RIBA 5"},{"id":"tl-6-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Adam","hrs":2.0,"date":"2026-02-02","task":"RIBA 5"},{"id":"tl-7-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Adam","hrs":1.0,"date":"2026-02-03","task":"RIBA 5"},{"id":"tl-8-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Andrea","hrs":1.0,"date":"2026-02-03","task":"RIBA 5"},{"id":"tl-9-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Adam","hrs":4.0,"date":"2026-02-05","task":"RIBA 5"},{"id":"tl-10-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Andrea","hrs":0.5,"date":"2026-02-05","task":"RIBA 5"},{"id":"tl-11-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Adam","hrs":2.0,"date":"2026-02-06","task":"RIBA 5"},{"id":"tl-12-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Andrea","hrs":0.5,"date":"2026-02-06","task":"RIBA 5"},{"id":"tl-13-britishm","rowId":"","taskId":"ht-britishmuseumb","person":"Adam","hrs":1.0,"date":"2026-03-26","task":"Review Tender Documents"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["AL","AM"],"harvestBudget":18480.0,"harvestSpent":4867.5,"harvestInvoiced":3220.0,"harvestBillableHrs":29.5,"l10Feedback":"Received","l10Owner":"AL/AM","l10Update":"9 April meeting with Civic and BM confirmed. Podium and basement both active."},{"id":"h2-britishmuseumpod","name":"British Museum - Podium Waterproofing","code":"","address":"Civic Engineers Limited","paymentTerms":"On Completion","status":"Active","notes":"PO (AWAITING) Contribution to Defect Schedule - \u00a35,250 Tender Review - \u00a33,960 CMT - \u00a39,240 Civic Engineers Limited Civic Engineers Carvers House 77 Dale Street Manchester Lancashire M1 2HG","dateWon":"","tasks":[{"id":"ht-britishmuseump","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":112,"hourlyRate":165.0,"fee":18450.0,"assignee":"AL","done":false}],"timeLogs":[{"id":"tl-0-britishm","rowId":"","taskId":"ht-britishmuseump","person":"Adam","hrs":2.0,"date":"2026-02-16","task":"Defect Schedule Contribution"},{"id":"tl-1-britishm","rowId":"","taskId":"ht-britishmuseump","person":"Adam","hrs":4.0,"date":"2026-02-25","task":"Defect Schedule Contribution"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["AL","AM"],"harvestBudget":18450.0,"harvestSpent":4125.0,"harvestInvoiced":7750.0,"harvestBillableHrs":35.5,"l10Feedback":"Received","l10Owner":"AL/AM","l10Update":"9 April meeting with Civic and BM confirmed. Podium and basement both active."},{"id":"h2-kennawayestate","name":"Kennaway Estate","code":"","address":"Dwyer Engineering Sevices Ltd","paymentTerms":"On Completion","status":"Active","notes":"\u00a33960 for Design Review","dateWon":"","tasks":[{"id":"ht-kennawayestate","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":24,"hourlyRate":165.0,"fee":3960.0,"assignee":"JE","done":false}],"timeLogs":[],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["JE"],"harvestBudget":3960.0,"harvestSpent":3960.0,"harvestInvoiced":3960.0,"harvestBillableHrs":24.0,"l10Feedback":"Not requested","l10Owner":"JE","l10Update":"Design review complete. Invoice issued."},{"id":"h2-1112stjamessquar","name":"11-12 St James Square","code":"","address":"Ellison Institute of Technology, Oxford Limited","paymentTerms":"On Completion","status":"Active","notes":"Invoicing Invoices to be sent electronically via email to Mickey Watt mickeywatt@ridge.co.uk and Hannah Baker at hannahbaker@ridge.co.uk no later than the 25th of every month, dated the last day of the month As well as being correctly addressed the invoice should state the total agreed fee (for the current stage), fees applied for already and fees due. Feasibility & Options Appraisal - \u00a34,500 RIBA Stage 3 - \u00a323,500","dateWon":"","tasks":[{"id":"ht-1112stjamessqu","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":170,"hourlyRate":165.0,"fee":28000.0,"assignee":"AL","done":false}],"timeLogs":[{"id":"tl-0-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":4.0,"date":"2026-01-06","task":"Familiarisation"},{"id":"tl-1-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":2.0,"date":"2026-01-07","task":"Familiarisation"},{"id":"tl-2-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Andrea","hrs":3.5,"date":"2026-01-07","task":"Familiarisation"},{"id":"tl-3-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Andrea","hrs":0.5,"date":"2026-01-08","task":"Familiarisation"},{"id":"tl-4-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Andrea","hrs":0.5,"date":"2026-01-09","task":"Familiarisation"},{"id":"tl-5-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":1.0,"date":"2026-01-12","task":"Familiarisation"},{"id":"tl-6-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":4.0,"date":"2026-01-13","task":"Familiarisation"},{"id":"tl-7-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":3.0,"date":"2026-01-13","task":"Familiarisation"},{"id":"tl-8-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":3.0,"date":"2026-01-14","task":"Familiarisation"},{"id":"tl-9-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":5.0,"date":"2026-01-16","task":"RIBA 3"},{"id":"tl-10-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"JE","hrs":1.0,"date":"2026-01-16","task":"Familiarisation"},{"id":"tl-11-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":5.0,"date":"2026-01-19","task":"RIBA 3"},{"id":"tl-12-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":5.0,"date":"2026-01-20","task":"RIBA 3"},{"id":"tl-13-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Andrea","hrs":1.0,"date":"2026-01-20","task":"Familiarisation"},{"id":"tl-14-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":4.0,"date":"2026-01-21","task":"RIBA 3"},{"id":"tl-15-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"JE","hrs":1.5,"date":"2026-01-21","task":"Familiarisation"},{"id":"tl-16-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Andrea","hrs":0.5,"date":"2026-01-27","task":"Familiarisation"},{"id":"tl-17-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":5.0,"date":"2026-01-30","task":"RIBA 3"},{"id":"tl-18-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Andrea","hrs":1.5,"date":"2026-01-30","task":"Familiarisation"},{"id":"tl-19-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Andrea","hrs":0.5,"date":"2026-02-02","task":"Familiarisation"},{"id":"tl-20-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Andrea","hrs":0.5,"date":"2026-02-03","task":"Familiarisation"},{"id":"tl-21-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Andrea","hrs":0.5,"date":"2026-02-04","task":"Familiarisation"},{"id":"tl-22-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Andrea","hrs":0.5,"date":"2026-02-05","task":"Familiarisation"},{"id":"tl-23-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Andrea","hrs":0.5,"date":"2026-02-06","task":"Familiarisation"},{"id":"tl-24-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":2.0,"date":"2026-02-10","task":"RIBA 3"},{"id":"tl-25-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":4.0,"date":"2026-02-11","task":"RIBA 3"},{"id":"tl-26-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":1.0,"date":"2026-02-12","task":"RIBA 3"},{"id":"tl-27-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":2.0,"date":"2026-03-03","task":"RIBA 3"},{"id":"tl-28-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":5.0,"date":"2026-03-25","task":"RIBA 3"},{"id":"tl-29-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":1.0,"date":"2026-03-25","task":"RIBA 3"},{"id":"tl-30-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":8.0,"date":"2026-03-26","task":"RIBA 3"},{"id":"tl-31-1112stja","rowId":"","taskId":"ht-1112stjamessqu","person":"Adam","hrs":8.0,"date":"2026-03-27","task":"RIBA 3"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["AL","AM"],"harvestBudget":28000.0,"harvestSpent":14190.0,"harvestInvoiced":24000.0,"harvestBillableHrs":86.0,"l10Feedback":"To be requested","l10Owner":"AL/AM","l10Update":"Investigations due. Stage 3 in progress. AM review completed."},{"id":"h2-kingswoodfields","name":"Kingswood Fields","code":"","address":"FIL Investment Management Limited","paymentTerms":"On Completion","status":"Pending","notes":"","dateWon":"","tasks":[],"timeLogs":[],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["BH"],"harvestBudget":0.0,"harvestSpent":0.0,"harvestInvoiced":13500.0,"harvestBillableHrs":54.0,"l10Feedback":"Not requested","l10Owner":"BH","l10Update":"Awaiting further instruction."},{"id":"h2-dovetailbuilding","name":"Dovetail Building","code":"","address":"GARDINER & THEOBALD LLP","paymentTerms":"On Completion","status":"Active","notes":"Stage 4 Waterproofing Design Review and Development Fee (\u00a3+VAT) CLW collaborate with the design team to ensure the waterproofing design is not over-specified or under-engineered; it will be \u2018just right\u2019. Familiarisation and design review \u2022 Familiarisation o Desktop study of available building and design information o Brief site visit o RFI to obtain any missing information \u2022 Review design to date: o Review available architectural, structural and geotechnical information. ","dateWon":"2026-01-26","tasks":[{"id":"ht-dovetailbuildi","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":596,"hourlyRate":165.0,"fee":98340.0,"assignee":"JE","done":false}],"timeLogs":[{"id":"tl-0-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"Andrea","hrs":0.5,"date":"2026-01-21","task":"RIBA 4A"},{"id":"tl-1-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":3.0,"date":"2026-01-21","task":"RIBA 4A"},{"id":"tl-2-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"Andrea","hrs":0.5,"date":"2026-01-22","task":"RIBA 4A"},{"id":"tl-3-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":3.0,"date":"2026-01-27","task":"RIBA 4A"},{"id":"tl-4-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":2.0,"date":"2026-01-27","task":"RIBA 5"},{"id":"tl-5-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":1.5,"date":"2026-01-28","task":"RIBA 5"},{"id":"tl-6-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":1.0,"date":"2026-01-30","task":"RIBA 4A"},{"id":"tl-7-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":2.0,"date":"2026-02-04","task":"RIBA 5"},{"id":"tl-8-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":2.0,"date":"2026-02-05","task":"RIBA 5"},{"id":"tl-9-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":1.0,"date":"2026-02-06","task":"RIBA 4A"},{"id":"tl-10-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":1.0,"date":"2026-02-10","task":"RIBA 5"},{"id":"tl-11-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":2.0,"date":"2026-02-11","task":"RIBA 5"},{"id":"tl-12-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":1.0,"date":"2026-02-12","task":"RIBA 5"},{"id":"tl-13-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":1.0,"date":"2026-02-13","task":"RIBA 5"},{"id":"tl-14-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"Adam","hrs":2.0,"date":"2026-02-17","task":"RIBA 5"},{"id":"tl-15-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"Adam","hrs":4.0,"date":"2026-02-18","task":"RIBA 5"},{"id":"tl-16-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":8.5,"date":"2026-02-24","task":"RIBA 4A"},{"id":"tl-17-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":1.0,"date":"2026-02-25","task":"RIBA 5"},{"id":"tl-18-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":6.5,"date":"2026-02-25","task":"RIBA 4A"},{"id":"tl-19-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":1.0,"date":"2026-02-26","task":"RIBA 5"},{"id":"tl-20-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":2.0,"date":"2026-02-26","task":"RIBA 4A"},{"id":"tl-21-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":0.5,"date":"2026-03-02","task":"RIBA 5"},{"id":"tl-22-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":2.0,"date":"2026-03-05","task":"RIBA 4A"},{"id":"tl-23-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":8.0,"date":"2026-03-09","task":"RIBA 4A"},{"id":"tl-24-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":4.0,"date":"2026-03-10","task":"RIBA 4A"},{"id":"tl-25-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":4.0,"date":"2026-03-11","task":"RIBA 4A"},{"id":"tl-26-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":4.0,"date":"2026-03-12","task":"RIBA 4A"},{"id":"tl-27-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":7.0,"date":"2026-03-13","task":"RIBA 4A"},{"id":"tl-28-dovetail","rowId":"","taskId":"ht-dovetailbuildi","person":"JE","hrs":6.0,"date":"2026-03-16","task":"RIBA 4A"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["JE","AM"],"harvestBudget":98340.0,"harvestSpent":13530.0,"harvestInvoiced":21500.0,"harvestBillableHrs":82.0,"l10Feedback":"Not requested","l10Owner":"JE/AM","l10Update":"BH meeting with Mark to be set up. Latent Defect insurance meeting pending."},{"id":"h2-stthomasyard","name":"St Thomas Yard","code":"20250930SE1 9RS","address":"GPE (St Thomas Street) Limited","paymentTerms":"On Completion","status":"Active","notes":"Peer Review \u00a31000K","dateWon":"2026-01-21","tasks":[{"id":"ht-stthomasyard","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":6,"hourlyRate":165.0,"fee":1000.0,"assignee":"JE","done":false}],"timeLogs":[],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["JE","AM"],"harvestBudget":1000.0,"harvestSpent":0.0,"harvestInvoiced":1000.0,"harvestBillableHrs":0.0,"l10Feedback":"Not requested","l10Owner":"JE/AM","l10Update":"Follow up final email. AM to contact Jarrard."},{"id":"h2-eburygatedevelop","name":"Ebury Gate Development","code":"","address":"Grosvenor West End Properties","paymentTerms":"On Completion","status":"Active","notes":"Grosvenor West End Properties 70 Grosvenor Street London W1K 3J PO No.","dateWon":"","tasks":[{"id":"ht-eburygatedevel","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":40,"hourlyRate":165.0,"fee":6600.0,"assignee":"AL","done":false}],"timeLogs":[{"id":"tl-0-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":3.0,"date":"2026-02-02","task":"RIBA 3"},{"id":"tl-1-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":2.0,"date":"2026-02-06","task":"RIBA 3"},{"id":"tl-2-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":1.0,"date":"2026-02-06","task":"RIBA 4A"},{"id":"tl-3-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":1.0,"date":"2026-02-09","task":"RIBA 4A"},{"id":"tl-4-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":2.0,"date":"2026-02-12","task":"RIBA 4A"},{"id":"tl-5-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":4.0,"date":"2026-02-19","task":"RIBA 3"},{"id":"tl-6-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":4.0,"date":"2026-02-23","task":"RIBA 4A"},{"id":"tl-7-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":5.0,"date":"2026-02-26","task":"RIBA 4A"},{"id":"tl-8-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":4.0,"date":"2026-03-04","task":"RIBA 4A"},{"id":"tl-9-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":4.0,"date":"2026-03-05","task":"Options Appraisal"},{"id":"tl-10-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":3.0,"date":"2026-03-05","task":"RIBA 4A"},{"id":"tl-11-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":2.0,"date":"2026-03-06","task":"RIBA 4A"},{"id":"tl-12-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":3.0,"date":"2026-03-09","task":"RIBA 4A"},{"id":"tl-13-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":4.0,"date":"2026-03-09","task":"Options Appraisal"},{"id":"tl-14-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":4.0,"date":"2026-03-10","task":"RIBA 4A"},{"id":"tl-15-eburygat","rowId":"","taskId":"ht-eburygatedevel","person":"Adam","hrs":1.0,"date":"2026-03-16","task":"RIBA 4A"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["AL"],"harvestBudget":6600.0,"harvestSpent":6435.0,"harvestInvoiced":8184.0,"harvestBillableHrs":47.0,"l10Feedback":"To be requested","l10Owner":"AL","l10Update":"Belgravia Court awaiting follow up. AM to follow up Stage 5 fee proposal."},{"id":"h2-holdenhouse","name":"Holden House","code":"20240723W1T 1JU","address":"Holden House Redevelopment","paymentTerms":"On Completion","status":"Active","notes":"20240723W1T 1JU Johnny running project Drawdown: \u00a35500 Aug, \u00a310k Sep, \u00a39k Oct, \u00a32k Nov CMT \u00a330,200","dateWon":"","tasks":[{"id":"ht-holdenhouse","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":448,"hourlyRate":165.0,"fee":73860.0,"assignee":"JE","done":false}],"timeLogs":[{"id":"tl-0-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":2.0,"date":"2026-01-02","task":"stage 5"},{"id":"tl-1-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":0.5,"date":"2026-01-05","task":"stage 5"},{"id":"tl-2-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":1.0,"date":"2026-01-06","task":"stage 5"},{"id":"tl-3-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":0.5,"date":"2026-01-08","task":"stage 5"},{"id":"tl-4-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":1.0,"date":"2026-01-12","task":"stage 5"},{"id":"tl-5-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":0.5,"date":"2026-01-13","task":"stage 5"},{"id":"tl-6-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":3.0,"date":"2026-01-14","task":"stage 5"},{"id":"tl-7-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":2.0,"date":"2026-01-15","task":"stage 5"},{"id":"tl-8-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":1.0,"date":"2026-01-16","task":"stage 5"},{"id":"tl-9-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"Andrea","hrs":0.5,"date":"2026-01-27","task":"stage 5"},{"id":"tl-10-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":1.0,"date":"2026-01-27","task":"stage 5"},{"id":"tl-11-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":1.0,"date":"2026-01-30","task":"stage 5"},{"id":"tl-12-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"Andrea","hrs":0.5,"date":"2026-02-02","task":"stage 5"},{"id":"tl-13-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":1.0,"date":"2026-02-02","task":"stage 5"},{"id":"tl-14-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":1.0,"date":"2026-02-03","task":"stage 5"},{"id":"tl-15-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"Andrea","hrs":0.5,"date":"2026-02-03","task":"stage 5"},{"id":"tl-16-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"Andrea","hrs":0.5,"date":"2026-02-04","task":"stage 5"},{"id":"tl-17-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"Andrea","hrs":0.5,"date":"2026-02-05","task":"stage 5"},{"id":"tl-18-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"Andrea","hrs":0.5,"date":"2026-02-06","task":"stage 5"},{"id":"tl-19-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":1.0,"date":"2026-02-09","task":"stage 5"},{"id":"tl-20-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":4.0,"date":"2026-02-10","task":"stage 5"},{"id":"tl-21-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":0.5,"date":"2026-02-13","task":"stage 5"},{"id":"tl-22-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":2.5,"date":"2026-02-27","task":"stage 5"},{"id":"tl-23-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":2.0,"date":"2026-03-03","task":"stage 5"},{"id":"tl-24-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":0.5,"date":"2026-03-04","task":"stage 5"},{"id":"tl-25-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":0.5,"date":"2026-03-05","task":"stage 5"},{"id":"tl-26-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":1.0,"date":"2026-03-06","task":"stage 5"},{"id":"tl-27-holdenho","rowId":"","taskId":"ht-holdenhouse","person":"JE","hrs":1.25,"date":"2026-03-16","task":"Stage 4 Additional Vault Design"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["JE"],"harvestBudget":73860.0,"harvestSpent":60442.5,"harvestInvoiced":52510.0,"harvestBillableHrs":384.0,"l10Feedback":"Not requested","l10Owner":"JE","l10Update":"Outstanding vault issues. Awaiting updated design from Julian."},{"id":"h2-40holbornviaduct","name":"40 Holborn Viaduct - Investigations","code":"","address":"HV Freehold S.a.r.l.","paymentTerms":"On Completion","status":"Active","notes":"Invoice by the 25th of the month. The invoice date to be the last day of the month Send invoice to David.croker@gleeds.com Investigations report \u00a35,500 HV Freehold S.a r.l. 4a rue Henri M Schnadt L-2530, Luxembourg C/O Murray Anderson Nuveen Real Estat","dateWon":"","tasks":[{"id":"ht-40holbornviadu","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":53,"hourlyRate":165.0,"fee":8800.0,"assignee":"JE","done":false}],"timeLogs":[],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["JE"],"harvestBudget":8800.0,"harvestSpent":8400.0,"harvestInvoiced":9800.0,"harvestBillableHrs":55.0,"l10Feedback":"To be requested","l10Owner":"JE","l10Update":"JE/AM pursuing CMT role at Stage 5. AM to follow up."},{"id":"h2-220blackfriarsrd","name":"220 Blackfriars Rd","code":"","address":"JTRE London Ltd","paymentTerms":"On Completion","status":"Active","notes":"Familiarisation - \u00a35.5k RIBA Stage 3 Waterproofing Design Philosophy - \u00a317k RIBA Stage 4A Outline Design Development - \u00a357k RIBA Stage 4B Review of waterproofing specialist tender - \u00a38k RIBA Stage 5 CMT - \u00a326.9k (\u00a35.4k remaining to invoice following JTRE agreed additional fees) RIBA Stage 6 - \u00a34k","dateWon":"","tasks":[{"id":"ht-220blackfriars","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":718,"hourlyRate":165.0,"fee":118400.0,"assignee":"AL","done":false}],"timeLogs":[{"id":"tl-0-220black","rowId":"","taskId":"ht-220blackfriars","person":"Adam","hrs":7.0,"date":"2026-01-08","task":"stage 5"},{"id":"tl-1-220black","rowId":"","taskId":"ht-220blackfriars","person":"Adam","hrs":3.0,"date":"2026-01-22","task":"stage 5"},{"id":"tl-2-220black","rowId":"","taskId":"ht-220blackfriars","person":"Adam","hrs":3.0,"date":"2026-01-28","task":"stage 5"},{"id":"tl-3-220black","rowId":"","taskId":"ht-220blackfriars","person":"Adam","hrs":3.0,"date":"2026-02-20","task":"stage 5"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["AL"],"harvestBudget":118400.0,"harvestSpent":126922.5,"harvestInvoiced":114500.0,"harvestBillableHrs":843.5,"l10Feedback":"Not requested","l10Owner":"AL","l10Update":"Site visits pending. No decision on boundary wall. Follow up outstanding."},{"id":"h2-3335piccadilly","name":"33-35 Piccadilly","code":"20240617W1J 0LP","address":"Kier Construction Ltd.","paymentTerms":"On Completion","status":"Active","notes":"Familiarisation with the scheme (Kier Scope Stage 1): \u00a38400 Outline waterproofing design development (Kier Scope Stage 2): \u00a312,000 Monitoring of works on site - 4 visits - (Kier Stage 4): \u00a34800","dateWon":"","tasks":[{"id":"ht-3335piccadilly","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":153,"hourlyRate":165.0,"fee":25200.0,"assignee":"JE","done":false}],"timeLogs":[{"id":"tl-0-3335picc","rowId":"","taskId":"ht-3335piccadilly","person":"JE","hrs":0.5,"date":"2026-03-10","task":"CMT Role"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["JE"],"harvestBudget":25200.0,"harvestSpent":24930.0,"harvestInvoiced":20400.0,"harvestBillableHrs":163.5,"l10Feedback":"Not requested","l10Owner":"JE","l10Update":"Invoice chase closed. Site visit pending JE return."},{"id":"h2-10piccadilly","name":"10 Piccadilly","code":"20250512W1J 0DD","address":"Kier Construction Ltd.","paymentTerms":"On Completion","status":"Active","notes":"\u00a34500 for Early waterproofing assessment and report \u00a32540 for deetailed condition survey \u00a322500 for Stage 4 design","dateWon":"","tasks":[{"id":"ht-10piccadilly","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":180,"hourlyRate":165.0,"fee":29640.0,"assignee":"JE","done":false}],"timeLogs":[{"id":"tl-0-10piccad","rowId":"","taskId":"ht-10piccadilly","person":"Andrea","hrs":0.5,"date":"2026-01-28","task":"Stage 4a Design & Report"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["JE"],"harvestBudget":29640.0,"harvestSpent":38955.0,"harvestInvoiced":29640.0,"harvestBillableHrs":238.5,"l10Feedback":"Pending","l10Owner":"JE","l10Update":"Fee proposal sent for additional visit. Awaiting instruction."},{"id":"h2-universityofnott","name":"University of Nottingham","code":"20260318NG7 2RD","address":"Kier Construction Ltd.","paymentTerms":"On Completion","status":"Pending","notes":"","dateWon":"2026-04-13","tasks":[],"timeLogs":[],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":[],"harvestBudget":0.0,"harvestSpent":0.0,"harvestInvoiced":0.0,"harvestBillableHrs":7.5,"l10Feedback":"Not requested","l10Owner":"","l10Update":""},{"id":"h2-12burntwoodroadt","name":"12 Burntwood Road Town","code":"","address":"Kirsty Amstrong","paymentTerms":"On Completion","status":"Active","notes":"Initilal fee proposal: (agreed) Option A \u2013 Review & Technical Note: Desktop review of the information provided, one site visit (up to 2 hours on site), review of the contractor's remedial works, concise letter-report with photos and recommendations \u2013 \u00a33,250 + VAT. Client agreed on hourly rate for further comments on contractor proposal (11/03/2026)","dateWon":"2025-10-17","tasks":[{"id":"ht-12burntwoodroa","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":20,"hourlyRate":165.0,"fee":3250.0,"assignee":"AM","done":false}],"timeLogs":[{"id":"tl-0-12burntw","rowId":"","taskId":"ht-12burntwoodroa","person":"Andrea","hrs":0.5,"date":"2026-01-06","task":"Review & Technical Note"},{"id":"tl-1-12burntw","rowId":"","taskId":"ht-12burntwoodroa","person":"Andrea","hrs":0.5,"date":"2026-03-12","task":"Review contractor proposals"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["AM"],"harvestBudget":3250.0,"harvestSpent":3712.5,"harvestInvoiced":3250.0,"harvestBillableHrs":23.0,"l10Feedback":"Not requested","l10Owner":"AM","l10Update":"Client agreed hourly rate for further review of contractor proposal."},{"id":"h2-1knightsbridgegr","name":"1 Knightsbridge Green","code":"","address":"Knightsbridge Green Limited","paymentTerms":"On Completion","status":"Active","notes":"20260309SW1X 7QA_1Knightsbridge Green RIBA Stage 3 - \u00a316,725 Technical Design (RIBA Stage 4A) - \u00a319,800 Technical Design (RIBA Stage 4B) \u2013 Tender support - \u00a39,405.00 RIBA Stage 5 - \u00a329,040.00 (not confirmed yet) Invoicing: Project code AAM-TA-5-1-OT Submission of invoices should be an original electronic copy and must be issued (before the 25th of every month) to chris@blackburnltd.com, louis@blackburnltd.com and sarah@blackburnltd.com. Each invoice should be titled 1 Knightsbrid","dateWon":"2026-03-24","tasks":[{"id":"ht-1knightsbridge","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":278,"hourlyRate":165.0,"fee":45930.0,"assignee":"AM","done":false}],"timeLogs":[{"id":"tl-0-1knights","rowId":"","taskId":"ht-1knightsbridge","person":"Adam","hrs":2.0,"date":"2026-03-30","task":"RIBA 3"},{"id":"tl-1-1knights","rowId":"","taskId":"ht-1knightsbridge","person":"Adam","hrs":3.0,"date":"2026-03-31","task":"RIBA 3"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["AM","AL"],"harvestBudget":45930.0,"harvestSpent":8167.5,"harvestInvoiced":8862.0,"harvestBillableHrs":49.5,"l10Feedback":"Not requested","l10Owner":"AM/AL","l10Update":"Initial meeting with architect and SE completed. Proceeding with Stage 3."},{"id":"h2-sevensprings","name":"Seven Springs","code":"","address":"Leonard Cheshire","paymentTerms":"On Completion","status":"Pending","notes":"invoice sent to : ocrinvoices@leonardcheshire.org PO pending Instruction is \u00a3350+VAT (as per emails via Hickman Consult, dated 3rd October 2025)","dateWon":"","tasks":[],"timeLogs":[],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["BH"],"harvestBudget":0.0,"harvestSpent":0.0,"harvestInvoiced":0.0,"harvestBillableHrs":8.0,"l10Feedback":"Not requested","l10Owner":"BH","l10Update":"Instruction received. Work in progress."},{"id":"h2-timbersquare","name":"Timber Square","code":"","address":"LS Timber Square Developer Limited","paymentTerms":"On Completion","status":"Active","notes":"PO744000000156 : SS5010641 - CSSW London Ltd (t/a CLW) Basement Review \u00a317,200 invoices@landsec.com","dateWon":"","tasks":[{"id":"ht-timbersquare","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":224,"hourlyRate":165.0,"fee":37020.0,"assignee":"BH","done":false}],"timeLogs":[{"id":"tl-0-timbersq","rowId":"","taskId":"ht-timbersquare","person":"Andrea","hrs":0.5,"date":"2026-01-09","task":"Design Review"},{"id":"tl-1-timbersq","rowId":"","taskId":"ht-timbersquare","person":"JE","hrs":1.0,"date":"2026-01-19","task":"Design Review"},{"id":"tl-2-timbersq","rowId":"","taskId":"ht-timbersquare","person":"JE","hrs":2.0,"date":"2026-01-27","task":"Options Appraisal"},{"id":"tl-3-timbersq","rowId":"","taskId":"ht-timbersquare","person":"JE","hrs":2.0,"date":"2026-02-02","task":"Options Appraisal"},{"id":"tl-4-timbersq","rowId":"","taskId":"ht-timbersquare","person":"JE","hrs":6.0,"date":"2026-02-03","task":"Additional site visits"},{"id":"tl-5-timbersq","rowId":"","taskId":"ht-timbersquare","person":"JE","hrs":2.0,"date":"2026-02-09","task":"Additional site visits"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["BH","AM"],"harvestBudget":37020.0,"harvestSpent":31680.0,"harvestInvoiced":37040.0,"harvestBillableHrs":192.0,"l10Feedback":"Not requested","l10Owner":"BH/AM","l10Update":"Basement review ongoing. Invoices to Landsec."},{"id":"h2-jesb","name":"JESB","code":"","address":"Morgan Sindall","paymentTerms":"On Completion","status":"Active","notes":"Familiarisation \u00a34800 (completed) Review of Specialist Waterproofing Contractor\u2019s Tender documents. \u00a32750 Review of Specialist Waterproofing Contractor\u2019s Installation. \u00a38580 The up and coming work (this week) can be covered on Order Number S/75G101/150 With the attached amendment / variation to the appointment. Variation Number S/75G101/150-75CC99.SAAN14","dateWon":"","tasks":[{"id":"ht-jesb","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":185,"hourlyRate":165.0,"fee":30530.0,"assignee":"JE","done":false}],"timeLogs":[{"id":"tl-0-jesb","rowId":"","taskId":"ht-jesb","person":"JE","hrs":0.5,"date":"2026-01-19","task":"stage 5"},{"id":"tl-1-jesb","rowId":"","taskId":"ht-jesb","person":"JE","hrs":2.0,"date":"2026-02-03","task":"stage 5"},{"id":"tl-2-jesb","rowId":"","taskId":"ht-jesb","person":"JE","hrs":10.0,"date":"2026-02-04","task":"stage 5"},{"id":"tl-3-jesb","rowId":"","taskId":"ht-jesb","person":"JE","hrs":0.5,"date":"2026-02-13","task":"stage 5"},{"id":"tl-4-jesb","rowId":"","taskId":"ht-jesb","person":"JE","hrs":1.5,"date":"2026-02-23","task":"Review contractor proposals"},{"id":"tl-5-jesb","rowId":"","taskId":"ht-jesb","person":"JE","hrs":2.0,"date":"2026-03-03","task":"Review contractor proposals"},{"id":"tl-6-jesb","rowId":"","taskId":"ht-jesb","person":"Adam","hrs":2.0,"date":"2026-03-26","task":"Review contractor proposals"},{"id":"tl-7-jesb","rowId":"","taskId":"ht-jesb","person":"Adam","hrs":1.0,"date":"2026-03-31","task":"Review contractor proposals"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["JE"],"harvestBudget":30530.0,"harvestSpent":17820.0,"harvestInvoiced":20700.0,"harvestBillableHrs":115.5,"l10Feedback":"Pending","l10Owner":"JE","l10Update":"Multidisciplinary consultant no longer likely. Follow up meeting next week with contractors. IKO/Bauder/SIKA reached out."},{"id":"h2-nestonschool","name":"Neston School","code":"","address":"Morgan Sindall","paymentTerms":"On Completion","status":"Pending","notes":"c/o DAC Beachcroft, 25 Walbrook, London EC4N 8AF","dateWon":"","tasks":[],"timeLogs":[],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["BH"],"harvestBudget":0.0,"harvestSpent":0.0,"harvestInvoiced":11400.0,"harvestBillableHrs":40.5,"l10Feedback":"Not requested","l10Owner":"BH","l10Update":"Awaiting instruction."},{"id":"h2-1hanoversquare","name":"1 Hanover Square","code":"","address":"Nautilina Limited","paymentTerms":"On Completion","status":"Active","notes":"ADAM RUNNING Familiarisation - \u00a33,500 Stage 3 Design Philosophy - \u00a315,240 Stage 4a Outline Design - \u00a311,160 Total Fee \u00a330,000","dateWon":"","tasks":[{"id":"ht-1hanoversquare","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":181,"hourlyRate":165.0,"fee":29900.0,"assignee":"AL","done":false}],"timeLogs":[{"id":"tl-0-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"Adam","hrs":2.0,"date":"2026-01-05","task":"RIBA 4A"},{"id":"tl-1-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"Adam","hrs":1.0,"date":"2026-01-08","task":"RIBA 4A"},{"id":"tl-2-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"Adam","hrs":2.0,"date":"2026-03-13","task":"RIBA 4A"},{"id":"tl-3-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"Adam","hrs":2.0,"date":"2026-03-16","task":"RIBA 4A"},{"id":"tl-4-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"Adam","hrs":1.0,"date":"2026-03-17","task":"RIBA 4A"},{"id":"tl-5-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"JE","hrs":0.5,"date":"2026-03-17","task":"RIBA 4A"},{"id":"tl-6-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"Adam","hrs":1.0,"date":"2026-03-18","task":"RIBA 4A"},{"id":"tl-7-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"JE","hrs":0.5,"date":"2026-03-18","task":"RIBA 4A"},{"id":"tl-8-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"Adam","hrs":2.0,"date":"2026-03-19","task":"RIBA 4A"},{"id":"tl-9-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"JE","hrs":1.0,"date":"2026-03-19","task":"RIBA 4A"},{"id":"tl-10-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"Adam","hrs":8.0,"date":"2026-03-23","task":"RIBA 4A"},{"id":"tl-11-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"Adam","hrs":8.0,"date":"2026-03-24","task":"RIBA 4A"},{"id":"tl-12-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"Adam","hrs":4.0,"date":"2026-03-25","task":"RIBA 4A"},{"id":"tl-13-1hanover","rowId":"","taskId":"ht-1hanoversquare","person":"Adam","hrs":2.0,"date":"2026-03-27","task":"RIBA 4A"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["AL"],"harvestBudget":29900.0,"harvestSpent":26032.5,"harvestInvoiced":30000.0,"harvestBillableHrs":158.5,"l10Feedback":"Pending","l10Owner":"AL","l10Update":"No response from contractor. AM pursuing Stage 5 role."},{"id":"h2-75londonwallstag","name":"75 London Wall - Stage 3-5","code":"","address":"Prop Co Limited","paymentTerms":"On Completion","status":"Active","notes":"ADAM RUNNING Conclude Stage 2 - \u00a33,500.00 RIBA Stage 3 - \u00a324,000.00 RIBA Stage 4a - \u00a342,000.00 Stage 4a Additional B2 Strategy \u00a37,200.00 Review of Tender Documents (2No.) - \u00a32,400.00 RIBA Stage 4b - Condition Survey - \u00a36,600 RIBA Stage 5 CMT - \u00a350,000.00 - SEE CLW DRAWDOWN SCHEDULE in FEE Folder Invoicing protocol: Wessex Winchester Prop Co Limited c/o Accounts Payable Third Floor, Liberation House, Castle Street, St Helier, JE1 2LH, Jersey Co. number 111562","dateWon":"","tasks":[{"id":"ht-75londonwallst","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":822,"hourlyRate":165.0,"fee":135700.0,"assignee":"AL","done":false}],"timeLogs":[{"id":"tl-0-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":1.0,"date":"2026-01-05","task":"RIBA 5"},{"id":"tl-1-75london","rowId":"","taskId":"ht-75londonwallst","person":"Andrea","hrs":1.0,"date":"2026-01-06","task":"RIBA 5"},{"id":"tl-2-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":2.0,"date":"2026-01-07","task":"RIBA 5"},{"id":"tl-3-75london","rowId":"","taskId":"ht-75londonwallst","person":"Andrea","hrs":0.5,"date":"2026-01-08","task":"RIBA 5"},{"id":"tl-4-75london","rowId":"","taskId":"ht-75londonwallst","person":"Andrea","hrs":0.5,"date":"2026-01-09","task":"RIBA 5"},{"id":"tl-5-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":3.0,"date":"2026-01-09","task":"RIBA 5"},{"id":"tl-6-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":4.0,"date":"2026-01-14","task":"RIBA 5"},{"id":"tl-7-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":2.0,"date":"2026-01-15","task":"RIBA 5"},{"id":"tl-8-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":2.0,"date":"2026-01-21","task":"RIBA 5"},{"id":"tl-9-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":2.0,"date":"2026-01-23","task":"RIBA 5"},{"id":"tl-10-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":2.0,"date":"2026-01-26","task":"RIBA 5"},{"id":"tl-11-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":5.0,"date":"2026-01-27","task":"RIBA 5"},{"id":"tl-12-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":3.0,"date":"2026-02-05","task":"RIBA 5"},{"id":"tl-13-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":4.0,"date":"2026-02-11","task":"RIBA 5"},{"id":"tl-14-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":3.0,"date":"2026-02-13","task":"RIBA 5"},{"id":"tl-15-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":3.0,"date":"2026-02-16","task":"RIBA 5"},{"id":"tl-16-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":3.0,"date":"2026-02-17","task":"RIBA 5"},{"id":"tl-17-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":1.0,"date":"2026-02-18","task":"RIBA 5"},{"id":"tl-18-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":4.0,"date":"2026-02-19","task":"RIBA 5"},{"id":"tl-19-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":3.0,"date":"2026-02-20","task":"RIBA 5"},{"id":"tl-20-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":3.0,"date":"2026-02-23","task":"RIBA 5"},{"id":"tl-21-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":5.0,"date":"2026-02-27","task":"RIBA 5"},{"id":"tl-22-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":4.0,"date":"2026-03-06","task":"RIBA 5"},{"id":"tl-23-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":1.0,"date":"2026-03-11","task":"RIBA 5"},{"id":"tl-24-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":3.0,"date":"2026-03-13","task":"RIBA 5"},{"id":"tl-25-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":1.0,"date":"2026-03-16","task":"RIBA 5"},{"id":"tl-26-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":1.0,"date":"2026-03-24","task":"RIBA 5"},{"id":"tl-27-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":3.0,"date":"2026-03-30","task":"RIBA 5"},{"id":"tl-28-75london","rowId":"","taskId":"ht-75londonwallst","person":"Adam","hrs":3.0,"date":"2026-03-31","task":"RIBA 5"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["AL","BH"],"harvestBudget":135700.0,"harvestSpent":96435.0,"harvestInvoiced":99800.0,"harvestBillableHrs":626.0,"l10Feedback":"Not requested","l10Owner":"AL/BH","l10Update":"Design acceptable. No additional fee. Email to Opera re additional hourly rate pending."},{"id":"h2-mileendrd","name":"Mile End Rd","code":"","address":"Richardson Milling (UK) Ltd.","paymentTerms":"On Completion","status":"Active","notes":"PO E904433 6No. Total Site Visits for Phases 1 and 2 @ \u00a31,000.00+VAT (2No. undertaken & Invoiced as of 12th August 2024) 1No. Technical Note @ \u00a32,000.00+VAT (Invoiced 5th September 2023) 2No. Additional Visits agreed August 2023 @\u00a31,000.00+VAT (Invoiced 18th October & 29th November)","dateWon":"","tasks":[{"id":"ht-mileendrd","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":308,"hourlyRate":165.0,"fee":50900.0,"assignee":"","done":false}],"timeLogs":[{"id":"tl-0-mileendr","rowId":"","taskId":"ht-mileendrd","person":"Adam","hrs":5.0,"date":"2026-01-29","task":"Site visit"},{"id":"tl-1-mileendr","rowId":"","taskId":"ht-mileendrd","person":"Adam","hrs":3.0,"date":"2026-02-06","task":"Site visit"},{"id":"tl-2-mileendr","rowId":"","taskId":"ht-mileendrd","person":"Adam","hrs":3.0,"date":"2026-02-12","task":"Site visit"},{"id":"tl-3-mileendr","rowId":"","taskId":"ht-mileendrd","person":"Adam","hrs":4.0,"date":"2026-02-13","task":"Site visit"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":[],"harvestBudget":50900.0,"harvestSpent":33007.5,"harvestInvoiced":16100.0,"harvestBillableHrs":287.5,"l10Feedback":"Not requested","l10Owner":"","l10Update":""},{"id":"h2-circlesquarereen","name":"Circle Square - re-engagement - Hickman Consult","code":"","address":"Roose Law","paymentTerms":"On Completion","status":"Pending","notes":"","dateWon":"","tasks":[],"timeLogs":[],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":[],"harvestBudget":0.0,"harvestSpent":0.0,"harvestInvoiced":0.0,"harvestBillableHrs":0.5,"l10Feedback":"Not requested","l10Owner":"","l10Update":""},{"id":"h2-cornerstonecrawl","name":"Cornerstone, Crawley RH10 9RR","code":"","address":"Santander (CF Trustee) Limited/Forsters LLP","paymentTerms":"On Completion","status":"Pending","notes":"Expert witness services in relation to Our fees and T&Cs were issues on the 30th of May via Hickman Consult","dateWon":"","tasks":[],"timeLogs":[],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":[],"harvestBudget":0.0,"harvestSpent":0.0,"harvestInvoiced":0.0,"harvestBillableHrs":2.0,"l10Feedback":"Not requested","l10Owner":"","l10Update":""},{"id":"h2-7ridgmountstreet","name":"7 Ridgmount Street","code":"","address":"SEBRE RIDGMOUNT LIMITED","paymentTerms":"On Completion","status":"Active","notes":"'- Feasibility and Options Appraisal - 4500 (Completed) - RIBA Stage 3 \u2013 review and finalise the outline waterproofing design - 19500 (instructed) - RIBA Stage 4a Outline Design Development up to Tender - 32000","dateWon":"2025-11-20","tasks":[{"id":"ht-7ridgmountstre","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":145,"hourlyRate":165.0,"fee":24000.0,"assignee":"JE","done":false}],"timeLogs":[{"id":"tl-0-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"Andrea","hrs":0.5,"date":"2026-01-02","task":"Familiarisation"},{"id":"tl-1-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":2.0,"date":"2026-01-02","task":"Familiarisation"},{"id":"tl-2-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":3.5,"date":"2026-01-05","task":"RIBA 3"},{"id":"tl-3-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"Andrea","hrs":1.0,"date":"2026-01-05","task":"Familiarisation"},{"id":"tl-4-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":3.0,"date":"2026-01-06","task":"RIBA 3"},{"id":"tl-5-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":1.0,"date":"2026-01-08","task":"RIBA 3"},{"id":"tl-6-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":0.5,"date":"2026-01-13","task":"RIBA 3"},{"id":"tl-7-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":0.5,"date":"2026-01-14","task":"RIBA 3"},{"id":"tl-8-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":2.0,"date":"2026-01-16","task":"RIBA 3"},{"id":"tl-9-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":4.5,"date":"2026-01-19","task":"RIBA 3"},{"id":"tl-10-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":3.0,"date":"2026-01-21","task":"RIBA 3"},{"id":"tl-11-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":2.0,"date":"2026-01-22","task":"RIBA 3"},{"id":"tl-12-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"Andrea","hrs":1.0,"date":"2026-01-23","task":"Familiarisation"},{"id":"tl-13-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":4.0,"date":"2026-01-23","task":"RIBA 3"},{"id":"tl-14-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":3.0,"date":"2026-01-25","task":"RIBA 3"},{"id":"tl-15-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"Andrea","hrs":1.0,"date":"2026-01-27","task":"Familiarisation"},{"id":"tl-16-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":2.0,"date":"2026-01-28","task":"RIBA 3"},{"id":"tl-17-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"Andrea","hrs":1.0,"date":"2026-01-29","task":"Familiarisation"},{"id":"tl-18-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":3.0,"date":"2026-01-29","task":"RIBA 3"},{"id":"tl-19-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"Andrea","hrs":0.5,"date":"2026-01-30","task":"Familiarisation"},{"id":"tl-20-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"Andrea","hrs":0.5,"date":"2026-02-03","task":"RIBA 3"},{"id":"tl-21-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"Andrea","hrs":0.5,"date":"2026-02-04","task":"RIBA 3"},{"id":"tl-22-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"Andrea","hrs":0.5,"date":"2026-02-05","task":"RIBA 3"},{"id":"tl-23-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":3.0,"date":"2026-02-05","task":"RIBA 3"},{"id":"tl-24-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"Andrea","hrs":1.0,"date":"2026-02-06","task":"RIBA 3"},{"id":"tl-25-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":5.0,"date":"2026-02-06","task":"RIBA 3"},{"id":"tl-26-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":2.0,"date":"2026-02-09","task":"RIBA 3"},{"id":"tl-27-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":3.0,"date":"2026-02-10","task":"RIBA 3"},{"id":"tl-28-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":6.0,"date":"2026-02-11","task":"RIBA 3"},{"id":"tl-29-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":8.0,"date":"2026-02-12","task":"RIBA 3"},{"id":"tl-30-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":8.0,"date":"2026-02-13","task":"RIBA 3"},{"id":"tl-31-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":2.0,"date":"2026-02-23","task":"RIBA 3"},{"id":"tl-32-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":1.0,"date":"2026-02-24","task":"RIBA 3"},{"id":"tl-33-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":0.5,"date":"2026-02-25","task":"RIBA 3"},{"id":"tl-34-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":4.5,"date":"2026-02-26","task":"RIBA 3"},{"id":"tl-35-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":5.0,"date":"2026-02-27","task":"RIBA 3"},{"id":"tl-36-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":5.0,"date":"2026-03-02","task":"RIBA 3"},{"id":"tl-37-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":0.5,"date":"2026-03-03","task":"RIBA 3"},{"id":"tl-38-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":3.5,"date":"2026-03-04","task":"RIBA 3"},{"id":"tl-39-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":2.0,"date":"2026-03-05","task":"RIBA 3"},{"id":"tl-40-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":2.0,"date":"2026-03-06","task":"RIBA 3"},{"id":"tl-41-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":3.0,"date":"2026-03-09","task":"RIBA 3"},{"id":"tl-42-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":3.0,"date":"2026-03-10","task":"RIBA 3"},{"id":"tl-43-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":1.0,"date":"2026-03-11","task":"RIBA 3"},{"id":"tl-44-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":3.0,"date":"2026-03-12","task":"RIBA 3"},{"id":"tl-45-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"Adam","hrs":2.0,"date":"2026-03-13","task":"RIBA 3"},{"id":"tl-46-7ridgmou","rowId":"","taskId":"ht-7ridgmountstre","person":"JE","hrs":1.0,"date":"2026-03-20","task":"RIBA 3"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["JE","AM"],"harvestBudget":24000.0,"harvestSpent":23842.5,"harvestInvoiced":24000.0,"harvestBillableHrs":144.5,"l10Feedback":"Pending","l10Owner":"JE/AM","l10Update":"AM/JE call with QS on costs/timing/procurement. AM to get specialist contractor rates."},{"id":"h2-101clevelandstre","name":"101 Cleveland Street","code":"20251112W1T 6PJ","address":"Soho Data Holdings Limited","paymentTerms":"On Completion","status":"Active","notes":"\u25aa Site visit to understand the existing situation and condition \u25aa Review and report on any existing waterproofing design information \u25aa Review the Site Investigation & Flood Risk Assessments reports \u25aa Complete waterproofing risk assessment \u25aa Understand the waterproofing performance requirements for the basement. \u25aa An options appraisal \u25aa Develop a range of approaches which may be considered. Articulate: \u25aa Outline design (indicative detail) \u25aa The benefits \u25aa The potential negativ","dateWon":"2025-11-24","tasks":[{"id":"ht-101clevelandst","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":66,"hourlyRate":165.0,"fee":10860.0,"assignee":"AL","done":false}],"timeLogs":[{"id":"tl-0-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"Andrea","hrs":0.5,"date":"2026-01-06","task":"Review & Technical Note"},{"id":"tl-1-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"Andrea","hrs":0.5,"date":"2026-01-07","task":"Review & Technical Note"},{"id":"tl-2-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"Andrea","hrs":0.5,"date":"2026-01-08","task":"Review & Technical Note"},{"id":"tl-3-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"Andrea","hrs":2.0,"date":"2026-01-09","task":"Review & Technical Note"},{"id":"tl-4-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"Adam","hrs":4.0,"date":"2026-01-09","task":"Review & Technical Note"},{"id":"tl-5-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"Adam","hrs":1.0,"date":"2026-01-09","task":"Review & Technical Note"},{"id":"tl-6-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"JE","hrs":5.0,"date":"2026-01-22","task":"Performance Specification"},{"id":"tl-7-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"Adam","hrs":1.0,"date":"2026-01-23","task":"Performance Specification"},{"id":"tl-8-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"Andrea","hrs":1.0,"date":"2026-01-23","task":"Review & Technical Note"},{"id":"tl-9-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"JE","hrs":1.0,"date":"2026-01-26","task":"Performance Specification"},{"id":"tl-10-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"Andrea","hrs":1.0,"date":"2026-01-27","task":"Performance Specification"},{"id":"tl-11-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"JE","hrs":1.0,"date":"2026-01-27","task":"Performance Specification"},{"id":"tl-12-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"JE","hrs":6.0,"date":"2026-01-28","task":"Performance Specification"},{"id":"tl-13-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"Andrea","hrs":1.0,"date":"2026-01-29","task":"Performance Specification"},{"id":"tl-14-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"JE","hrs":4.0,"date":"2026-01-29","task":"Performance Specification"},{"id":"tl-15-101cleve","rowId":"","taskId":"ht-101clevelandst","person":"Adam","hrs":1.0,"date":"2026-03-06","task":"Review & Technical Note"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["AL","AM"],"harvestBudget":10860.0,"harvestSpent":9735.0,"harvestInvoiced":10860.0,"harvestBillableHrs":59.0,"l10Feedback":"Pending","l10Owner":"AL/AM","l10Update":"AM requested feedback. BD meeting to be set up."},{"id":"h2-southbankcentre","name":"Southbank Centre","code":"","address":"Southbank Centre","paymentTerms":"On Completion","status":"Active","notes":"Purchase Order: PO 009197 RIBA Stage 2 Develop Waterproofing Design Options - \u00a312,500 RIBA Stage 3 Develop Outline Design - \u00a338,500 PO raised is for \u00a351k Cc'c Invoice to Cass.Cozens@avisonyoung.com","dateWon":"","tasks":[{"id":"ht-southbankcentr","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":309,"hourlyRate":165.0,"fee":51000.0,"assignee":"AL","done":false}],"timeLogs":[{"id":"tl-0-southban","rowId":"","taskId":"ht-southbankcentr","person":"Andrea","hrs":1.0,"date":"2026-01-26","task":"RIBA 3"},{"id":"tl-1-southban","rowId":"","taskId":"ht-southbankcentr","person":"Andrea","hrs":1.0,"date":"2026-02-02","task":"RIBA 3"},{"id":"tl-2-southban","rowId":"","taskId":"ht-southbankcentr","person":"Andrea","hrs":0.5,"date":"2026-02-04","task":"RIBA 3"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["AL","AM"],"harvestBudget":51000.0,"harvestSpent":24997.5,"harvestInvoiced":51000.0,"harvestBillableHrs":151.5,"l10Feedback":"Received","l10Owner":"AL/AM","l10Update":"Until funds available, design team re-tendering from Stage 4."},{"id":"h2-15firschase","name":"15 Firs Chase","code":"","address":"The Brennan Group","paymentTerms":"On Completion","status":"Active","notes":"Send the invoice of Afp to Jake Evans and copy in Matthew jake.evans@brennangroup.co.uk matthew.german@brennangroup.co.uk Familiarisation - 2k Outline Design Report - Stage 4a - 15k Stage 5- 3200 Stage 6 -2400k","dateWon":"2024-06-28","tasks":[{"id":"ht-15firschase","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":149,"hourlyRate":165.0,"fee":24600.0,"assignee":"JE","done":false}],"timeLogs":[{"id":"tl-0-15firsch","rowId":"","taskId":"ht-15firschase","person":"JE","hrs":0.5,"date":"2026-01-02","task":"stage 5"},{"id":"tl-1-15firsch","rowId":"","taskId":"ht-15firschase","person":"Adam","hrs":3.0,"date":"2026-02-26","task":"stage 5"},{"id":"tl-2-15firsch","rowId":"","taskId":"ht-15firschase","person":"Adam","hrs":3.0,"date":"2026-02-27","task":"stage 5"},{"id":"tl-3-15firsch","rowId":"","taskId":"ht-15firschase","person":"JE","hrs":1.0,"date":"2026-03-02","task":"Stage 6 Handover and Documentation"},{"id":"tl-4-15firsch","rowId":"","taskId":"ht-15firschase","person":"JE","hrs":0.5,"date":"2026-03-05","task":"Stage 6 Handover and Documentation"},{"id":"tl-5-15firsch","rowId":"","taskId":"ht-15firschase","person":"JE","hrs":1.0,"date":"2026-03-06","task":"Stage 6 Handover and Documentation"},{"id":"tl-6-15firsch","rowId":"","taskId":"ht-15firschase","person":"JE","hrs":1.0,"date":"2026-03-10","task":"Stage 6 Handover and Documentation"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["JE"],"harvestBudget":24600.0,"harvestSpent":38895.0,"harvestInvoiced":22600.0,"harvestBillableHrs":255.5,"l10Feedback":"Not requested","l10Owner":"JE","l10Update":"Handover pack reviewed. AL first pass done."},{"id":"h2-oxfordsciencepar","name":"Oxford Science Park - CMT","code":"20230220OX4 4XP","address":"The Oxford Science Park (Properties) No. 7 Limited","paymentTerms":"On Completion","status":"Active","notes":"CMT-\u00a38900 + \u00a31750 Stage 5 design + \u00a32900 Stage 5 design changes/details","dateWon":"","tasks":[{"id":"ht-oxfordsciencep","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":82,"hourlyRate":165.0,"fee":13550.0,"assignee":"JE","done":false}],"timeLogs":[{"id":"tl-0-oxfordsc","rowId":"","taskId":"ht-oxfordsciencep","person":"JE","hrs":1.5,"date":"2026-01-02","task":"Pour 1 remedials"},{"id":"tl-1-oxfordsc","rowId":"","taskId":"ht-oxfordsciencep","person":"JE","hrs":0.5,"date":"2026-01-05","task":"Pour 1 remedials"},{"id":"tl-2-oxfordsc","rowId":"","taskId":"ht-oxfordsciencep","person":"JE","hrs":1.0,"date":"2026-01-06","task":"Pour 1 remedials"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["JE"],"harvestBudget":13550.0,"harvestSpent":14550.0,"harvestInvoiced":21200.0,"harvestBillableHrs":142.5,"l10Feedback":"Received","l10Owner":"JE","l10Update":"No update. JE chased. Awaiting site access."},{"id":"h2-2trafalgarway","name":"2 Trafalgar Way","code":"","address":"Urbanest UK Canary Wharf Ltd","paymentTerms":"On Completion","status":"Pending","notes":"","dateWon":"","tasks":[],"timeLogs":[{"id":"tl-0-2trafalg","rowId":"","taskId":"ht-2trafalgarway","person":"Adam","hrs":3.0,"date":"2026-03-11","task":"Variation / Additional charge"},{"id":"tl-1-2trafalg","rowId":"","taskId":"ht-2trafalgarway","person":"Adam","hrs":3.0,"date":"2026-03-16","task":"Variation / Additional charge"},{"id":"tl-2-2trafalg","rowId":"","taskId":"ht-2trafalgarway","person":"Adam","hrs":2.0,"date":"2026-03-19","task":"Variation / Additional charge"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["AL"],"harvestBudget":0.0,"harvestSpent":0.0,"harvestInvoiced":12151.8,"harvestBillableHrs":73.5,"l10Feedback":"Not requested","l10Owner":"AL","l10Update":"PM stepped in \u2014 Midgard to provide proper information."},{"id":"h2-2729olympicwaywe","name":"27-29 Olympic Way, Wembley Park, London","code":"20260421HA9 0FR","address":"Wembley Park","paymentTerms":"On Completion","status":"Active","notes":"Scope of services Review of available information and drawings Site visit, including visual inspection and photographic record Identification of key risks and likely causes of failure Advice on any targeted opening-up works required to inform the diagnosis Preparation of a concise report including: Summary of findings High-level assessment of cause Outline remedial strategy and recommendations Fee We would be able to undertake the above for a fixed fee of \u00a34,250 + VAT, inclusive","dateWon":"2026-04-20","tasks":[{"id":"ht-2729olympicway","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":26,"hourlyRate":165.0,"fee":4250.0,"assignee":"","done":false}],"timeLogs":[],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":[],"harvestBudget":4250.0,"harvestSpent":0.0,"harvestInvoiced":0.0,"harvestBillableHrs":0.0,"l10Feedback":"Not requested","l10Owner":"","l10Update":""},{"id":"h2-5thestrand","name":"5 The Strand","code":"","address":"Whitbread Group PLC","paymentTerms":"On Completion","status":"Active","notes":"Familiarisation - 3.5k Stage 3 Design Review - 6.5k Stage 4a - 28.8k Stage 5 - \u00a319,600 (includes 6 site visits) PO : WGB2946760P","dateWon":"2024-10-10","tasks":[{"id":"ht-5thestrand","name":"Agreed Scope (Harvest)","stage":"Active","budgetHrs":354,"hourlyRate":165.0,"fee":58400.0,"assignee":"JE","done":false}],"timeLogs":[{"id":"tl-0-5thestra","rowId":"","taskId":"ht-5thestrand","person":"JE","hrs":1.0,"date":"2026-01-14","task":"Stage 5 CMT"},{"id":"tl-1-5thestra","rowId":"","taskId":"ht-5thestrand","person":"Adam","hrs":1.0,"date":"2026-02-09","task":"Stage 5 CMT"},{"id":"tl-2-5thestra","rowId":"","taskId":"ht-5thestrand","person":"JE","hrs":1.0,"date":"2026-02-11","task":"Stage 5 CMT"},{"id":"tl-3-5thestra","rowId":"","taskId":"ht-5thestrand","person":"Adam","hrs":2.0,"date":"2026-02-12","task":"Stage 5 CMT"},{"id":"tl-4-5thestra","rowId":"","taskId":"ht-5thestrand","person":"JE","hrs":1.0,"date":"2026-02-13","task":"Stage 5 CMT"},{"id":"tl-5-5thestra","rowId":"","taskId":"ht-5thestrand","person":"Adam","hrs":4.0,"date":"2026-02-24","task":"Stage 5 CMT"},{"id":"tl-6-5thestra","rowId":"","taskId":"ht-5thestrand","person":"JE","hrs":1.0,"date":"2026-03-02","task":"Stage 5 CMT"},{"id":"tl-7-5thestra","rowId":"","taskId":"ht-5thestrand","person":"JE","hrs":0.5,"date":"2026-03-05","task":"Stage 5 CMT"}],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":["JE","AM"],"harvestBudget":58400.0,"harvestSpent":57225.0,"harvestInvoiced":52800.0,"harvestBillableHrs":374.0,"l10Feedback":"Not requested","l10Owner":"JE/AM","l10Update":"AM to follow up on contract. AL issued Rascor comments. AM/AL site visit completed. AL to send inspection schedule."},{"id":"h2-crownsydneyreega","name":"Crown Sydney Re-egagement","code":"","address":"Wotton Kearney","paymentTerms":"On Completion","status":"Pending","notes":"","dateWon":"","tasks":[],"timeLogs":[],"deadlines":[],"afpList":[],"appointmentChecklist":[],"team":[],"harvestBudget":0.0,"harvestSpent":0.0,"harvestInvoiced":0.0,"harvestBillableHrs":5.5,"l10Feedback":"Not requested","l10Owner":"","l10Update":""}],activeProjectId=null;
