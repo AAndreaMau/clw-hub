@@ -2036,31 +2036,35 @@ function aiAsk() {
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
   aiIsThinking = true;
 
-  // Get API key from variable
-  var key = (typeof ANTHROPIC_API_KEY !== 'undefined') ? ANTHROPIC_API_KEY : '';
-  if (!key || key === 'YOUR_API_KEY_HERE') {
+  // Determine endpoint
+  var useProxy = AI_PROXY_URL && AI_PROXY_URL !== 'YOUR_WORKER_URL_HERE';
+  var useDirect = !useProxy && ANTHROPIC_API_KEY && ANTHROPIC_API_KEY !== 'YOUR_API_KEY_HERE';
+
+  if (!useProxy && !useDirect) {
     if (typing) typing.style.display = 'none';
     aiAddMessage('bot',
-      '<strong>API key needed.</strong><br>'
-      + '1. Go to <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--navy);text-decoration:underline">console.anthropic.com</a><br>'
-      + '2. Create a key, copy it<br>'
-      + '3. In the HTML file find <code>YOUR_API_KEY_HERE</code> and replace it with your key<br>'
-      + '4. Re-upload to GitHub'
+      '<strong>Setup needed:</strong><br>'
+      + '1. Deploy <code>clw-ai-worker.js</code> to Cloudflare Workers (free)<br>'
+      + '2. Set your Anthropic API key as a Worker secret called <code>ANTHROPIC_API_KEY</code><br>'
+      + '3. In the Hub HTML, set <code>AI_PROXY_URL</code> to your worker URL<br><br>'
+      + 'Instructions below ↓'
     );
     if (btn) { btn.disabled = false; btn.textContent = 'Ask'; }
     aiIsThinking = false;
     return;
   }
 
-  // Use direct fetch (works on github.io with correct headers)
-  fetch('https://api.anthropic.com/v1/messages', {
+  var fetchUrl     = useProxy ? AI_PROXY_URL : 'https://api.anthropic.com/v1/messages';
+  var fetchHeaders = { 'Content-Type': 'application/json' };
+  if (!useProxy) {
+    fetchHeaders['x-api-key'] = ANTHROPIC_API_KEY;
+    fetchHeaders['anthropic-version'] = '2023-06-01';
+    fetchHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
+  }
+
+  fetch(fetchUrl, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
+    headers: fetchHeaders,
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 600,
@@ -2159,7 +2163,11 @@ window.addEventListener('load', function() {
   }, 1000);
 });
 
-var ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
+// ── Cloudflare Worker proxy URL ─────────────────────────────
+// Set this after deploying clw-ai-worker.js to Cloudflare Workers
+var AI_PROXY_URL = 'YOUR_WORKER_URL_HERE'; // e.g. https://clw-ai.yourname.workers.dev
+
+var ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE'; // only needed if NOT using the proxy
 
 
 
