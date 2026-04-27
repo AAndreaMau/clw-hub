@@ -2238,7 +2238,7 @@ function aiAsk() {
   aiIsThinking = true;
 
   // Determine endpoint
-  var useProxy = AI_PROXY_URL && AI_PROXY_URL !== 'https://clw-ai.aa-maugeri.workers.dev/';
+  var useProxy = AI_PROXY_URL && AI_PROXY_URL !== 'YOUR_WORKER_URL_HERE';
   var useDirect = !useProxy && ANTHROPIC_API_KEY && ANTHROPIC_API_KEY !== 'YOUR_API_KEY_HERE';
 
   if (!useProxy && !useDirect) {
@@ -2273,11 +2273,20 @@ function aiAsk() {
       messages: aiHistory.slice(-8)
     })
   })
-  .then(function(resp) { return resp.json().then(function(d) { return {ok:resp.ok, data:d}; }); })
+  .then(function(resp) {
+    var ct = resp.headers.get('content-type')||'';
+    if (ct.indexOf('application/json') < 0) {
+      // Worker returned HTML error page - get text for debugging
+      return resp.text().then(function(t) {
+        return {ok:false, data:{error:{message:'Worker error (not JSON). Check your Worker URL and that it deployed correctly. Response: ' + t.slice(0,120)}}};
+      });
+    }
+    return resp.json().then(function(d) { return {ok:resp.ok, data:d}; });
+  })
   .then(function(result) {
     if (typing) typing.style.display = 'none';
     if (!result.ok) {
-      var msg = (result.data.error && result.data.error.message) ? result.data.error.message : ('Error ' + result.status);
+      var msg = (result.data.error && result.data.error.message) ? result.data.error.message : ('Error connecting to AI');
       aiAddMessage('bot', '<span style="color:var(--red)">⚠ ' + escH(msg) + '</span>');
     } else {
       var answer = (result.data.content && result.data.content[0]) ? result.data.content[0].text : 'No response.';
@@ -4805,21 +4814,43 @@ function syncBundleData() {
 function syncApplyData(bundle) {
   if (!bundle || !bundle.data) return;
   var d = bundle.data;
-  if (d.projects         !== undefined) { projects         = d.projects;         renderProjList(); renderWorkload(); }
-  if (d.timesheetEntries !== undefined)   timesheetEntries = d.timesheetEntries;
-  if (d.tsRows           !== undefined)   tsRows           = d.tsRows;
-  if (d.l10Data          !== undefined)   l10Data          = d.l10Data;
-  if (d.fcWon            !== undefined)   fcWon            = d.fcWon;
-  if (d.fcForecast       !== undefined)   fcForecast       = d.fcForecast;
-  if (d.roiRows          !== undefined)   roiRows          = d.roiRows;
+  if (d.projects !== undefined) {
+    // Ensure all projects have required arrays
+    d.projects.forEach(function(p) {
+      if (!p.timeLogs)            p.timeLogs = [];
+      if (!p.tasks)               p.tasks = [];
+      if (!p.deadlines)           p.deadlines = [];
+      if (!p.afpList)             p.afpList = [];
+      if (!p.appointmentChecklist)p.appointmentChecklist = [];
+      if (!p.team)                p.team = [];
+    });
+    projects = d.projects;
+    renderProjList();
+    renderWorkload();
+    // Re-select active project so right panel refreshes
+    if (activeProjectId) {
+      var stillExists = projects.find(function(p){return p.id===activeProjectId;});
+      if (stillExists) renderAllPanels();
+      else if (projects.length) selectProject(projects[0].id);
+    } else if (projects.length) {
+      selectProject(projects[0].id);
+    }
+  }
+  if (d.timesheetEntries !== undefined) timesheetEntries = d.timesheetEntries;
+  if (d.tsRows           !== undefined) tsRows           = d.tsRows;
+  if (d.l10Data          !== undefined) l10Data          = d.l10Data;
+  if (d.fcWon            !== undefined) fcWon            = d.fcWon;
+  if (d.fcForecast       !== undefined) fcForecast       = d.fcForecast;
+  if (d.roiRows          !== undefined) roiRows          = d.roiRows;
+  if (d.dashProjects     !== undefined) dashProjects     = d.dashProjects;
+  if (d.dashScorecard    !== undefined) dashScorecard    = d.dashScorecard;
   // Re-render active tab
   var activeTab = document.querySelector('.content.active');
   if (activeTab) {
     var id = activeTab.id.replace('tab-','');
     if (id==='timesheet') renderTimesheet();
     if (id==='l10')       l10Render();
-    if (id==='forecast')  fcInit();
-    if (id==='projects')  renderAllPanels();
+    if (id==='forecast')  dashRenderOverview();
   }
 }
 
