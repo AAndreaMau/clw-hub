@@ -1,30 +1,36 @@
 // CLW Hub — Anthropic API Proxy
 // Deploy to Cloudflare Workers (free tier)
-// Relays requests from github.io to Anthropic, adding the API key server-side
 
 export default {
   async fetch(request, env) {
+
+    // ── Test endpoint — visit Worker URL in browser to confirm it's working ──
+    if (request.method === 'GET') {
+      return new Response(JSON.stringify({
+        status: 'CLW AI Worker is running',
+        hasKey: !!(env.ANTHROPIC_API_KEY)
+      }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
 
     // ── CORS preflight ──────────────────────────────────────────
     if (request.method === 'OPTIONS') {
       return new Response(null, {
         headers: {
-          'Access-Control-Allow-Origin':  'https://aandreamau.github.io',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Origin':  '*',
+          'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
           'Access-Control-Max-Age':       '86400',
         }
       });
     }
 
-    // ── Only allow POST from our GitHub Pages domain ────────────
     if (request.method !== 'POST') {
       return new Response('Method not allowed', { status: 405 });
-    }
-
-    const origin = request.headers.get('Origin') || '';
-    if (!origin.includes('aandreamau.github.io') && !origin.includes('localhost')) {
-      return new Response('Forbidden', { status: 403 });
     }
 
     // ── Forward to Anthropic ────────────────────────────────────
@@ -35,7 +41,7 @@ export default {
         method: 'POST',
         headers: {
           'Content-Type':      'application/json',
-          'x-api-key':         env.ANTHROPIC_API_KEY,   // set in Worker env vars
+          'x-api-key':         env.ANTHROPIC_API_KEY,
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
@@ -52,7 +58,7 @@ export default {
         status: anthropicResp.status,
         headers: {
           'Content-Type':                'application/json',
-          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Origin': '*',
         },
       });
 
@@ -61,7 +67,7 @@ export default {
         status: 500,
         headers: {
           'Content-Type':                'application/json',
-          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Origin': '*',
         },
       });
     }
