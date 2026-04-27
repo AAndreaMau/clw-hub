@@ -1792,6 +1792,207 @@ function genId(){return 'id'+Date.now()+Math.floor(Math.random()*9999);}
 function fmt(n){return '£'+Math.round(n||0).toLocaleString('en-GB');}
 function fmtN(n){return Math.round(n||0).toLocaleString('en-GB');}
 
+var FEE_DATA=[
+  {stage:'Familiarisation',color:'#C19A49',meetingCount:1,services:[
+    {name:'Brief site visit',basic:true,defaultHrs:4,included:true},
+    {name:'Desktop study of available building and design information',basic:true,defaultHrs:6,included:true},
+    {name:'Review of existing O&M and historic records',basic:true,defaultHrs:3,included:true},
+    {name:'RFI to obtain any missing information',basic:true,defaultHrs:2,included:true},
+    {name:'Identify as-built waterproofing design and assess performance',basic:true,defaultHrs:3,included:true},
+    {name:'High level waterproofing report',basic:true,defaultHrs:8,included:true},
+    {name:'Contribution on defining scope for intrusive investigations',basic:true,defaultHrs:2,included:false},
+    {name:'Review current waterproofing strategy',basic:false,defaultHrs:4,included:false},
+    {name:'Options and appraisal report',basic:false,defaultHrs:6,included:false}
+  ]},
+  {stage:'2 — Concept Design',color:'#1B3252',meetingCount:2,services:[
+    {name:'Review Stage 2 architectural drawings',basic:true,defaultHrs:4,included:true},
+    {name:'Waterproofing strategy report',basic:true,defaultHrs:12,included:true},
+    {name:'BS 8102 classification and type selection',basic:true,defaultHrs:4,included:true},
+    {name:'Identify critical interfaces and risk areas',basic:true,defaultHrs:3,included:true},
+    {name:'Schedule of Services for subsequent stages',basic:true,defaultHrs:2,included:true},
+    {name:'Podium deck strategy',basic:false,defaultHrs:6,included:false},
+    {name:'Retaining wall waterproofing strategy',basic:false,defaultHrs:6,included:false},
+    {name:'Value engineering appraisal',basic:false,defaultHrs:4,included:false},
+    {name:'Specialist sub-contractor recommendation',basic:false,defaultHrs:2,included:false}
+  ]},
+  {stage:'3 — Spatial Coordination',color:'#1B5E42',meetingCount:2,services:[
+    {name:'Review Stage 3 drawings and coordinate with design team',basic:true,defaultHrs:6,included:true},
+    {name:'Waterproofing specification (outline)',basic:true,defaultHrs:10,included:true},
+    {name:'Typical details — key interfaces',basic:true,defaultHrs:8,included:true},
+    {name:'Review structural and MEP interfaces',basic:true,defaultHrs:4,included:true},
+    {name:'Comment on contractor proposals',basic:true,defaultHrs:3,included:true},
+    {name:'Full specification — all elements',basic:false,defaultHrs:14,included:false},
+    {name:'Full detail drawings package',basic:false,defaultHrs:16,included:false},
+    {name:'Drainage design',basic:false,defaultHrs:8,included:false}
+  ]},
+  {stage:'4a — Technical Design (Outline)',color:'#4a6274',meetingCount:2,services:[
+    {name:'Review Stage 4 drawings',basic:true,defaultHrs:6,included:true},
+    {name:'Update waterproofing specification',basic:true,defaultHrs:8,included:true},
+    {name:'Develop typical details',basic:true,defaultHrs:10,included:true},
+    {name:'Respond to RFIs from design team',basic:true,defaultHrs:4,included:true},
+    {name:'Pre-tender waterproofing review',basic:true,defaultHrs:4,included:true},
+    {name:'Thermal bridging review at interfaces',basic:false,defaultHrs:6,included:false},
+    {name:'NHBC / warranty body liaison',basic:false,defaultHrs:3,included:false}
+  ]},
+  {stage:'4b — Technical Design (Detailed)',color:'#c07a12',meetingCount:2,services:[
+    {name:'Full detail drawing package',basic:true,defaultHrs:20,included:true},
+    {name:'Performance specification',basic:true,defaultHrs:10,included:true},
+    {name:'Contractor tender support',basic:true,defaultHrs:6,included:true},
+    {name:'Tender return assessment',basic:true,defaultHrs:4,included:true},
+    {name:'Specialist contractor recommendation report',basic:false,defaultHrs:6,included:false},
+    {name:'Mock-up review',basic:false,defaultHrs:4,included:false}
+  ]},
+  {stage:'5 — Construction',color:'#b83232',meetingCount:4,services:[
+    {name:'Site visits and inspections',basic:true,defaultHrs:16,included:true},
+    {name:'Inspection reports',basic:true,defaultHrs:12,included:true},
+    {name:'RFI responses during construction',basic:true,defaultHrs:8,included:true},
+    {name:'Review contractor method statements',basic:true,defaultHrs:4,included:true},
+    {name:'Review contractor RAMS',basic:false,defaultHrs:4,included:false},
+    {name:'Defect schedule and snagging',basic:false,defaultHrs:6,included:false},
+    {name:'Witness testing (flood/vacuum/ELD)',basic:false,defaultHrs:8,included:false},
+    {name:'Practical completion inspection',basic:false,defaultHrs:4,included:false}
+  ]}
+];
+var feeState=JSON.parse(JSON.stringify(FEE_DATA));
+function getRate(){return parseFloat(document.getElementById('rate-hourly').value)||198;}
+function getMeetRate(){return parseFloat(document.getElementById('rate-meeting').value)||660;}
+
+function buildFeeUI(){
+  var el=document.getElementById('fee-stages');
+  if(!el)return;
+  el.innerHTML=feeState.map(function(stage,si){
+    var svcs=stage.services.map(function(svc,svi){
+      var inc=svc.included;
+      return '<div class="svc-row" id="svcrow-'+si+'-'+svi+'">'
+        +'<div class="svc-check'+(inc?' on':'')+'" id="svc-'+si+'-'+svi+'" onclick="toggleService('+si+','+svi+')"></div>'
+        +'<div class="svc-name'+(inc?' included':'')+'" id="svcname-'+si+'-'+svi+'">'+svc.name+'</div>'
+        +'<span class="svc-badge '+(svc.basic?'basic-tag':'add-tag')+'">'+(svc.basic?'Basic':'Additional')+'</span>'
+        +'<input type="number" class="svc-hrs" id="hrs-'+si+'-'+svi+'" value="'+(svc.included?svc.defaultHrs:svc.defaultHrs)+'" min="0" step="0.5" oninput="recalcAll()"'+(inc?'':' disabled')+'>'
+        +'<span class="svc-fee" id="fee-'+si+'-'+svi+'">'+fmt(svc.defaultHrs*getRate())+'</span>'
+        +'</div>';
+    }).join('');
+    return '<div class="stage-block" id="block-'+si+'">'
+      +'<div class="stage-head" onclick="toggleStageBlock('+si+')">'
+        +'<div style="display:flex;align-items:center;gap:10px">'
+          +'<div class="stage-dot" style="background:'+stage.color+'"></div>'
+          +'<span class="stage-head-name">'+stage.stage+'</span>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:12px">'
+          +'<span class="stage-head-fee" id="stagefee-'+si+'">£0</span>'
+          +'<span class="stage-arrow" id="arrow-'+si+'">▸</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="stage-body open" id="stage-body-'+si+'">'
+        +'<div class="svc-row" style="background:var(--bg2)">'
+          +'<div class="svc-check on" id="meet-chk-'+si+'" onclick="toggleMeeting('+si+')"></div>'
+          +'<div class="svc-name included">Meeting allocation</div>'
+          +'<span class="svc-badge meet-tag">Meetings</span>'
+          +'<input type="number" class="svc-hrs" id="meet-hrs-'+si+'" value="'+stage.meetingCount+'" min="0" step="0.5" oninput="recalcAll()">'
+          +'<span class="svc-fee" id="meet-fee-'+si+'">'+fmt(stage.meetingCount*getMeetRate())+'</span>'
+        +'</div>'
+        +svcs
+      +'</div>'
+    +'</div>';
+  }).join('');
+  recalcAll();
+}
+
+function toggleStageBlock(si){
+  var body=document.getElementById('stage-body-'+si);
+  var arrow=document.getElementById('arrow-'+si);
+  if(!body)return;
+  var isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  if(arrow) arrow.textContent=isOpen?'▸':'▾';
+}
+
+function toggleService(si,svi){
+  var chk=document.getElementById('svc-'+si+'-'+svi);
+  var name=document.getElementById('svcname-'+si+'-'+svi);
+  var hrs=document.getElementById('hrs-'+si+'-'+svi);
+  if(!chk)return;
+  var inc=chk.classList.toggle('on');
+  if(name) name.classList.toggle('included',inc);
+  if(hrs)  hrs.disabled=!inc;
+  feeState[si].services[svi].included=inc;
+  recalcAll();
+}
+
+function toggleMeeting(si){
+  var c=document.getElementById('meet-chk-'+si);
+  if(c) c.classList.toggle('on');
+  recalcAll();
+}
+
+function recalcAll(){
+  var hourly=getRate(),meetRate=getMeetRate(),grand=0,totHrs=0,totMeet=0,totSvc=0;
+  feeState.forEach(function(stage,si){
+    var stageFee=0;
+    var mc=document.getElementById('meet-chk-'+si);
+    var mh=document.getElementById('meet-hrs-'+si);
+    if(mc&&mc.classList.contains('on')&&mh){
+      var m=parseFloat(mh.value)||0;
+      var mf=m*meetRate;
+      stageFee+=mf; totMeet+=m;
+      var mfEl=document.getElementById('meet-fee-'+si);
+      if(mfEl) mfEl.textContent=fmt(mf);
+    }
+    stage.services.forEach(function(svc,svi){
+      var hEl=document.getElementById('hrs-'+si+'-'+svi);
+      var fEl=document.getElementById('fee-'+si+'-'+svi);
+      var h=parseFloat((hEl&&hEl.value)||svc.defaultHrs)||0;
+      var inc=svc.included;
+      var f=inc?h*hourly:0;
+      if(fEl) fEl.textContent=inc?fmt(f):'—';
+      if(inc){stageFee+=f;totHrs+=h;totSvc++;}
+    });
+    var sfEl=document.getElementById('stagefee-'+si);
+    if(sfEl) sfEl.textContent=fmt(stageFee);
+    grand+=stageFee;
+  });
+  var gEl=document.getElementById('fee-grand-total');
+  if(gEl) gEl.textContent=fmt(grand);
+  var hEl=document.getElementById('fee-total-hours');
+  if(hEl) hEl.textContent=Math.round(totHrs);
+  var mEl=document.getElementById('fee-total-meetings');
+  if(mEl) mEl.textContent=Math.round(totMeet);
+  var sEl=document.getElementById('fee-total-services');
+  if(sEl) sEl.textContent=totSvc;
+  roiCalcOnly();
+}
+
+function selectAll(inc){
+  feeState.forEach(function(stage,si){
+    stage.services.forEach(function(svc,svi){
+      svc.included=inc;
+      var chk=document.getElementById('svc-'+si+'-'+svi);
+      var name=document.getElementById('svcname-'+si+'-'+svi);
+      var hrs=document.getElementById('hrs-'+si+'-'+svi);
+      if(chk) chk.classList.toggle('on',inc);
+      if(name) name.classList.toggle('included',inc);
+      if(hrs)  hrs.disabled=!inc;
+    });
+  });
+  recalcAll();
+}
+
+function selectBasic(){
+  feeState.forEach(function(stage,si){
+    stage.services.forEach(function(svc,svi){
+      var inc=!!svc.basic;
+      svc.included=inc;
+      var chk=document.getElementById('svc-'+si+'-'+svi);
+      var name=document.getElementById('svcname-'+si+'-'+svi);
+      var hrs=document.getElementById('hrs-'+si+'-'+svi);
+      if(chk) chk.classList.toggle('on',inc);
+      if(name) name.classList.toggle('included',inc);
+      if(hrs)  hrs.disabled=!inc;
+    });
+  });
+  recalcAll();
+}
+
+
 /* ── SEARCH ── */
 
 /* ═══════════════════════════════════════════════════════════
@@ -2152,16 +2353,7 @@ function aiGoTab(tabId) {
 }
 
 // Pre-init iframe on load for faster first response
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    var input = document.getElementById('search-input');
-    if (input) input.addEventListener('focus', function() { aiOpenPanel(); });
-    // Pre-warm iframe
-    if (typeof ANTHROPIC_API_KEY !== 'undefined' && ANTHROPIC_API_KEY !== 'YOUR_API_KEY_HERE') {
-      aiGetIframe();
-    }
-  }, 1000);
-});
+// focus listener moved to main load event
 
 // ── Cloudflare Worker proxy URL ─────────────────────────────
 // Set this after deploying clw-ai-worker.js to Cloudflare Workers
@@ -4675,6 +4867,8 @@ window.addEventListener('load', function(){
   if(typeof renderProjList==='function'){ renderProjList(); renderWorkload(); }
   if(typeof l10Render==='function') l10Render();
   if(typeof buildFeeUI==='function'){ buildFeeUI(); setTimeout(function(){ if(typeof feeState!=='undefined') feeState.forEach(function(_,si){ toggleStageBlock(si); }); recalcAll(); },80); }
+  var srchInput=document.getElementById('search-input');
+  if(srchInput) srchInput.addEventListener('focus',function(){aiOpenPanel();});
   setTimeout(function(){
     if(typeof projects!=='undefined'&&projects.length&&!activeProjectId)
       if(typeof selectProject==='function') selectProject(projects[0].id);
