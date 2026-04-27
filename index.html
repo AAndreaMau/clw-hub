@@ -2238,7 +2238,7 @@ function aiAsk() {
   aiIsThinking = true;
 
   // Determine endpoint
-  var useProxy = AI_PROXY_URL && AI_PROXY_URL !== 'YOUR_WORKER_URL_HERE';
+  var useProxy = AI_PROXY_URL && AI_PROXY_URL !== 'https://clw-ai.aa-maugeri.workers.dev/';
   var useDirect = !useProxy && ANTHROPIC_API_KEY && ANTHROPIC_API_KEY !== 'YOUR_API_KEY_HERE';
 
   if (!useProxy && !useDirect) {
