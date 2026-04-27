@@ -751,8 +751,8 @@ textarea.form-input{resize:vertical;min-height:70px;line-height:1.5}
     <div class="flow">
       <div class="flow-step"><div class="flow-icon" style="background:var(--teal-l);color:var(--teal)">&#x21A9;</div><div class="flow-body"><div class="flow-title">Repeat Clients &amp; Consultants</div><div class="flow-desc">Primary source — relationship-led, reputation-based. CLW does not undertake mass marketing.</div></div></div>
       <div class="flow-step"><div class="flow-icon" style="background:var(--blue-l);color:var(--blue)">&#x1F91D;</div><div class="flow-body"><div class="flow-title">Referrals</div><div class="flow-desc">Architects, engineers, contractors, developers, project managers, client representatives</div></div></div>
-      <div class="flow-step"><div class="flow-icon" style="background:var(--amber-l);color:var(--amber)">&#x2709;</div><div class="flow-body"><div class="flow-title">Website / Direct Email</div><div class="flow-desc"><b><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="533a3d353c13303f247d303c3d20263f273a3d34">[email&#160;protected]</a></b> — all emails redirected to directors</div></div></div>
-      <div class="flow-step"><div class="flow-icon" style="background:var(--amber-l);color:var(--amber)">&#x1F4DE;</div><div class="flow-body"><div class="flow-title">Phone — Virtually-You</div><div class="flow-desc"><b>0207 458 4073</b> — all calls filtered by Virtually-You<br>Contact: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bceed9dfd9ccc8d5d3d2fccad5cec8c9ddd0d0c591c5d3c992dfd392c9d7">[email&#160;protected]</a></div></div></div>
+      <div class="flow-step"><div class="flow-icon" style="background:var(--amber-l);color:var(--amber)">&#x2709;</div><div class="flow-body"><div class="flow-title">Website / Direct Email</div><div class="flow-desc"><b>[email protected]</b> — all emails redirected to directors</div></div></div>
+      <div class="flow-step"><div class="flow-icon" style="background:var(--amber-l);color:var(--amber)">&#x1F4DE;</div><div class="flow-body"><div class="flow-title">Phone — Virtually-You</div><div class="flow-desc"><b>0207 458 4073</b> — all calls filtered by Virtually-You<br>Contact: [email protected]</div></div></div>
       <div class="flow-step"><div class="flow-icon" style="background:var(--purple-l);color:var(--purple)">&#x1F4CB;</div><div class="flow-body"><div class="flow-title">Tender Invitations &amp; Networking</div><div class="flow-desc">Informal fee requests, reputation-based approaches</div></div></div>
     </div>
   </div>
@@ -2258,13 +2258,13 @@ function aiFormat(text) {
   ];
   tabs.forEach(function(t) {
     var re = new RegExp('(?<![>\\w])(' + t[0].replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')(?![\\w<])', 'gi');
-    html = html.replace(re, '<a class="ai-link" onclick="aiGoTab(\'' + t[1] + '\')">$1 ↗</a>');
+    html = html.replace(re, '<a class="ai-link" onclick="aiGoTab('' + t[1] + '')">$1 ↗</a>');
   });
   return html;
 }
 
 function aiGoTab(tabId) {
-  var btn = document.querySelector('.nav-btn[onclick*="\'' + tabId + '\'"]');
+  var btn = document.querySelector('.nav-btn[onclick*="'' + tabId + ''"]');
   if (btn) showTab(tabId, btn);
   var panel = document.getElementById('ai-panel');
   if (panel) panel.style.display = 'none';
@@ -2375,14 +2375,14 @@ function renderOverview(p){
     +'<div class="section-label">Team Allocated</div>'
     +'<div class="card" style="padding:10px 14px">'
       +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'
-        +(p.team&&p.team.length?p.team.map(function(m){return '<span style="display:flex;align-items:center;gap:4px;background:var(--blue-l);color:var(--blue);padding:3px 8px;border-radius:12px;font-size:11px;font-weight:500">'+escH(m)+'<span onclick="removeTeamMember(\''+escH(m)+'\')" style="cursor:pointer;opacity:.6;margin-left:2px">&times;</span></span>';}).join(''):'<span style="font-size:12px;color:var(--ink3)">No team members allocated</span>')
+        +(p.team&&p.team.length?p.team.map(function(m){return '<span style="display:flex;align-items:center;gap:4px;background:var(--blue-l);color:var(--blue);padding:3px 8px;border-radius:12px;font-size:11px;font-weight:500">'+escH(m)+'<span onclick="removeTeamMember(''+escH(m)+'')" style="cursor:pointer;opacity:.6;margin-left:2px">&times;</span></span>';}).join(''):'<span style="font-size:12px;color:var(--ink3)">No team members allocated</span>')
       +'</div>'
       +'<div style="display:flex;gap:6px"><select id="add-team-sel" class="form-input" style="font-size:11px;padding:4px 8px;flex:1"><option value="">+ Add team member&hellip;</option>'+TEAM_MEMBERS.filter(function(m){return !p.team||p.team.indexOf(m)===-1;}).map(function(m){return '<option>'+escH(m)+'</option>';}).join('')+'</select><button class="fee-btn fee-btn-secondary" style="font-size:11px;padding:5px 10px" onclick="addTeamMember()">Add</button></div>'
     +'</div>'
     +'<div class="section-label">Budget vs Time</div>'
     +'<div class="card" style="padding:12px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink3);margin-bottom:4px"><span>'+totalLogged.toFixed(1)+'h logged</span><span>'+totalBudget+'h budget ('+pct+'%)</span></div>'
     +'<div class="prog-bar-wrap"><div class="prog-bar-fill '+barCol+'" style="width:'+pct+'%"></div></div></div>'
-    +(pending.length?'<div class="section-label">Appointment Checklist — Pending</div><div class="card" style="padding:10px 14px">'+pending.map(function(item){return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px"><div style="width:14px;height:14px;border:1.5px solid var(--border);border-radius:3px;flex-shrink:0;cursor:pointer" onclick="markApptItem(\''+escH(item)+'\')"></div><span style="color:var(--red)">'+escH(item)+'</span></div>';}).join('')+'</div>':'<div class="card" style="padding:10px 14px;font-size:12px;color:var(--teal)">&#x2713; All appointment checklist items complete</div>');
+    +(pending.length?'<div class="section-label">Appointment Checklist — Pending</div><div class="card" style="padding:10px 14px">'+pending.map(function(item){return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px"><div style="width:14px;height:14px;border:1.5px solid var(--border);border-radius:3px;flex-shrink:0;cursor:pointer" onclick="markApptItem(''+escH(item)+'')"></div><span style="color:var(--red)">'+escH(item)+'</span></div>';}).join('')+'</div>':'<div class="card" style="padding:10px 14px;font-size:12px;color:var(--teal)">&#x2713; All appointment checklist items complete</div>');
 }
 function addTeamMember(){var p=getActiveProject();if(!p)return;var s=document.getElementById('add-team-sel');if(!s||!s.value)return;if(!p.team)p.team=[];if(p.team.indexOf(s.value)===-1)p.team.push(s.value);renderOverview(p);}
 function removeTeamMember(name){var p=getActiveProject();if(!p||!p.team)return;p.team=p.team.filter(function(m){return m!==name;});renderOverview(p);}
@@ -2410,7 +2410,7 @@ function renderTasks(p){
         var tPct=t.budgetHrs>0?Math.min(100,Math.round(lft/t.budgetHrs*100)):0;
         var rate=t.hourlyRate||getRate();
         return '<div style="display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)">'
-          +'<div class="task-chk'+(t.done?' done':'')+'" onclick="toggleTaskDone(\''+t.id+'\')"></div>'
+          +'<div class="task-chk'+(t.done?' done':'')+'" onclick="toggleTaskDone(''+t.id+'')"></div>'
           +'<div class="task-name'+(t.done?' done':'')+'"><div>'+escH(t.name)+'</div>'
             +'<div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap">'
               +(t.assignee?'<span class="tag tag-blue" style="font-size:9px;margin:0">'+escH(t.assignee)+'</span>':'')
@@ -2418,7 +2418,7 @@ function renderTasks(p){
               +(t.budgetHrs?'<div class="prog-bar-wrap" style="width:80px;margin:0"><div class="prog-bar-fill'+(tPct>90?' over':tPct>70?' warn':'')+'" style="width:'+tPct+'%"></div></div>':'')
             +'</div>'
           +'</div>'
-          +'<button class="task-log-btn" onclick="goToTimesheetForProject(\''+t.id+'\')">Log</button>'
+          +'<button class="task-log-btn" onclick="goToTimesheetForProject(''+t.id+'')">Log</button>'
           +'<div style="text-align:right;font-size:11px;color:var(--ink3);white-space:nowrap">'+lft.toFixed(1)+'/'+(t.budgetHrs||'?')+'h</div>'
         +'</div>';
       }).join('')+'</div></div>';
@@ -2500,9 +2500,9 @@ function afpRenderItems(){
   var wrap=document.getElementById('afp-items-wrap');if(!wrap)return;
   wrap.innerHTML=afpItems.map(function(item,i){
     return '<div style="display:grid;grid-template-columns:1fr 60px 90px 32px;gap:6px;align-items:center;margin-bottom:6px">'
-      +'<input class="form-input" type="text" value="'+escH(item.desc||'')+'" placeholder="Description" style="font-size:12px" onchange="afpSetItem('+i+',\'desc\',this.value)">'
-      +'<input class="form-input" type="number" value="'+(item.qty||1)+'" min="0" style="text-align:right;font-size:12px" placeholder="Qty" onchange="afpSetItem('+i+',\'qty\',this.value);afpRecalc()">'
-      +'<input class="form-input" type="number" value="'+(item.unitPrice||'')+'" min="0" style="text-align:right;font-size:12px" placeholder="\xa3 Unit" onchange="afpSetItem('+i+',\'unitPrice\',this.value);afpRecalc()">'
+      +'<input class="form-input" type="text" value="'+escH(item.desc||'')+'" placeholder="Description" style="font-size:12px" onchange="afpSetItem('+i+','desc',this.value)">'
+      +'<input class="form-input" type="number" value="'+(item.qty||1)+'" min="0" style="text-align:right;font-size:12px" placeholder="Qty" onchange="afpSetItem('+i+','qty',this.value);afpRecalc()">'
+      +'<input class="form-input" type="number" value="'+(item.unitPrice||'')+'" min="0" style="text-align:right;font-size:12px" placeholder="\xa3 Unit" onchange="afpSetItem('+i+','unitPrice',this.value);afpRecalc()">'
       +'<button class="fee-btn fee-btn-reset" style="padding:4px 8px" onclick="afpRemoveItem('+i+')">\xd7</button>'
     +'</div>';
   }).join('');
@@ -2821,7 +2821,7 @@ function renderTimesheet(){
           if(val)rowTotal+=parseFloat(val)||0;
           var inputCls='ts-cell-input'+(isBH?' bh':tsIsToday(ds)?' today-cell':'');
           var flag=entry&&entry.flagged?'<div style="width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block;margin-left:3px;vertical-align:middle"></div>':'';
-          return '<td class="ts-cell"><input class="'+inputCls+'" type="number" min="0" max="24" step="0.25" value="'+val+'" placeholder="—"'+(isBH?' disabled':'')+' onchange="tsOnCellChange(\''+row.id+'\',\''+ds+'\',this)" onblur="tsOnCellChange(\''+row.id+'\',\''+ds+'\',this)"></td>';
+          return '<td class="ts-cell"><input class="'+inputCls+'" type="number" min="0" max="24" step="0.25" value="'+val+'" placeholder="—"'+(isBH?' disabled':'')+' onchange="tsOnCellChange(''+row.id+'',''+ds+'',this)" onblur="tsOnCellChange(''+row.id+'',''+ds+'',this)"></td>';
         }).join('');
         var rowTotalDisp=rowTotal>0?rowTotal.toFixed(1)+'h':'0';
         return '<tr>'
@@ -2832,7 +2832,7 @@ function renderTimesheet(){
           +'</td>'
           +cells
           +'<td class="ts-row-total">'+rowTotalDisp+'</td>'
-          +'<td><button class="ts-row-del" onclick="tsDeleteRow(\''+row.id+'\')" title="Remove row">&times;</button></td>'
+          +'<td><button class="ts-row-del" onclick="tsDeleteRow(''+row.id+'')" title="Remove row">&times;</button></td>'
         +'</tr>';
       }).join('');
     }
@@ -3081,15 +3081,15 @@ function roiRender(){
     var val=expW-expWi;
     var barPct=Math.round(expW/maxExpW*100);
     return '<tr>'
-      +'<td><input type="text" value="'+escH(r.name)+'" placeholder="Describe the risk\u2026" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:var(--fb);background:var(--white);color:var(--ink)" onchange="roiOnChange(\''+r.id+'\',\'name\',this.value)"></td>'
-      +'<td class="num"><input class="roi-exp-input" type="number" value="'+Math.round(r.exposure||0)+'" min="0" placeholder="0" onchange="roiOnChange(\''+r.id+'\',\'exposure\',this.value)"></td>'
-      +'<td class="num"><input class="roi-prob-input" type="number" value="'+Math.round((r.probWithout||0)*100)+'" min="0" max="100" onchange="roiOnChange(\''+r.id+'\',\'probWithout\',this.value)"><span style="font-size:10px;color:var(--ink3)">%</span></td>'
+      +'<td><input type="text" value="'+escH(r.name)+'" placeholder="Describe the risk\u2026" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:var(--fb);background:var(--white);color:var(--ink)" onchange="roiOnChange(''+r.id+'','name',this.value)"></td>'
+      +'<td class="num"><input class="roi-exp-input" type="number" value="'+Math.round(r.exposure||0)+'" min="0" placeholder="0" onchange="roiOnChange(''+r.id+'','exposure',this.value)"></td>'
+      +'<td class="num"><input class="roi-prob-input" type="number" value="'+Math.round((r.probWithout||0)*100)+'" min="0" max="100" onchange="roiOnChange(''+r.id+'','probWithout',this.value)"><span style="font-size:10px;color:var(--ink3)">%</span></td>'
       +'<td class="num" style="color:var(--red)">'+fmtROI(expW)
         +'<div style="display:inline-block;width:50px;height:5px;background:var(--bg3);border-radius:3px;margin-left:6px;vertical-align:middle;overflow:hidden"><div style="height:100%;width:'+barPct+'%;background:var(--red);opacity:.5;border-radius:3px"></div></div></td>'
-      +'<td class="num"><input class="roi-prob-input" type="number" value="'+Math.round((r.probWith||0)*100)+'" min="0" max="100" onchange="roiOnChange(\''+r.id+'\',\'probWith\',this.value)"><span style="font-size:10px;color:var(--ink3)">%</span></td>'
+      +'<td class="num"><input class="roi-prob-input" type="number" value="'+Math.round((r.probWith||0)*100)+'" min="0" max="100" onchange="roiOnChange(''+r.id+'','probWith',this.value)"><span style="font-size:10px;color:var(--ink3)">%</span></td>'
       +'<td class="num" style="color:var(--teal)">'+fmtROI(expWi)+'</td>'
       +'<td class="num roi-value-cell">'+fmtROI(val)+'</td>'
-      +'<td><button class="roi-del-btn" onclick="roiDeleteRow(\''+r.id+'\')">&#x00D7;</button></td>'
+      +'<td><button class="roi-del-btn" onclick="roiDeleteRow(''+r.id+'')">&#x00D7;</button></td>'
     +'</tr>';
   }).join('');
   roiCalcOnly();
@@ -3381,7 +3381,7 @@ function l10RenderCheckin() {
   grid.innerHTML = L10_TEAM.map(function(name) {
     return '<div class="l10-checkin-card">'
       +'<div class="l10-checkin-name">'+name+'</div>'
-      +'<textarea class="l10-checkin-input" placeholder="One win this week\u2026" oninput="l10SetCheckin(\''+name+'\',this.value)">'+escH(d.checkins[name]||'')+'</textarea>'
+      +'<textarea class="l10-checkin-input" placeholder="One win this week\u2026" oninput="l10SetCheckin(''+name+'',this.value)">'+escH(d.checkins[name]||'')+'</textarea>'
     +'</div>';
   }).join('');
 }
@@ -3481,13 +3481,13 @@ function l10RenderLive() {
 
     // Project cell: dropdown + optional custom name input
     var projCell = '<select style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-weight:600;font-family:var(--fb);background:var(--white);color:var(--ink);margin-bottom:3px" '
-        + 'onchange="l10SetLive('+i+',\'projId\',this.value);l10RenderLive()">'
+        + 'onchange="l10SetLive('+i+','projId',this.value);l10RenderLive()">'
         + projects.map(function(p){return '<option value="'+p.id+'"'+(p.id===row.projId?' selected':'')+'>'+escH(p.name)+'</option>';}).join('')
         + '<option value=""'+(row.projId?'':' selected')+'>— Manual entry —</option>'
       + '</select>'
       + (!row.projId ? '<input type="text" value="'+escH(row.name||'')+'" placeholder="Project name" '
           + 'style="width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:var(--fb);background:var(--bg2)" '
-          + 'onchange="l10SetLive('+i+',\'name\',this.value)">' : '');
+          + 'onchange="l10SetLive('+i+','name',this.value)">' : '');
 
     // Snapshot cell: stage + fee bar — colour-coded background
     var snapBg = pct > 100 ? 'background:#ff003311;border:1.5px solid #ff0033' : pct >= 95 ? 'background:var(--red-l);border:1px solid var(--red)' : pct >= 80 ? 'background:var(--amber-l);border:1px solid var(--amber)' : 'background:var(--teal-l);border:1px solid var(--teal)';
@@ -3617,16 +3617,16 @@ function l10RenderPros() {
     return '<tr>'
       +'<td style="min-width:160px"><input type="text" value="'+escH(row.name||'')+'" placeholder="Opportunity / quote ref" '
         +'style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-weight:600;font-family:var(--fb);background:var(--white)" '
-        +'onchange="l10SetPros('+i+',\'name\',this.value)"></td>'
+        +'onchange="l10SetPros('+i+','name',this.value)"></td>'
       +'<td style="min-width:90px">'
         +'<select style="width:100%;padding:4px 5px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--fb);background:var(--white);cursor:pointer" '
-          +'onchange="l10SetPros('+i+',\'owner\',this.value)">'
+          +'onchange="l10SetPros('+i+','owner',this.value)">'
           +'<option value="">—</option>'
           +L10_OWNERS.map(function(o){return '<option'+(o===row.owner?' selected':'')+'>'+o+'</option>';}).join('')
         +'</select>'
       +'</td>'
       +'<td style="min-width:240px"><textarea style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--fb);background:var(--white);resize:vertical;min-height:42px;line-height:1.5" '
-        +'placeholder="Status \u2022 next step\u2026" onchange="l10SetPros('+i+',\'status\',this.value)">'+escH(row.status||'')+'</textarea></td>'
+        +'placeholder="Status \u2022 next step\u2026" onchange="l10SetPros('+i+','status',this.value)">'+escH(row.status||'')+'</textarea></td>'
       +'<td><button class="l10-del-btn" onclick="l10DelPros('+i+')">\u00D7</button></td>'
     +'</tr>';
   }).join('');
@@ -3648,7 +3648,7 @@ function l10RenderKPIs() {
       +'<div style="display:flex;align-items:center;gap:4px"><span style="font-size:12px;color:var(--ink3)">'+(prefix||'\u00a3')+'</span>'
       +'<input type="number" value="'+v+'" placeholder="0" '
         +'style="width:100%;padding:3px 0;border:none;border-bottom:1px solid var(--border);font-size:18px;font-weight:700;font-family:var(--ff);color:'+color+';background:transparent" '
-        +'oninput="l10SetKPI(\''+id+'\',this.value)">'
+        +'oninput="l10SetKPI(''+id+'',this.value)">'
       +'</div>'
     +'</div>';
   };
@@ -3684,12 +3684,12 @@ function l10RenderMonths() {
     return '<div style="background:var(--bg2);border-radius:6px;padding:8px 10px;border:0.5px solid var(--border)">'
       +'<input type="text" value="'+escH(m.month||'')+'" placeholder="Jan 2026" '
         +'style="width:100%;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);border:none;background:transparent;margin-bottom:4px" '
-        +'onchange="l10SetMonth('+i+',\'month\',this.value)">'
+        +'onchange="l10SetMonth('+i+','month',this.value)">'
       +'<div style="display:flex;align-items:baseline;gap:3px">'
         +'<span style="font-size:10px;color:var(--ink3)">\u00a3</span>'
         +'<input type="number" value="'+v+'" placeholder="0" '
           +'style="width:100%;font-size:15px;font-weight:700;font-family:var(--ff);color:'+col+';border:none;background:transparent" '
-          +'onchange="l10SetMonth('+i+',\'value\',this.value);l10RenderMonths()">'
+          +'onchange="l10SetMonth('+i+','value',this.value);l10RenderMonths()">'
       +'</div>'
       +'<div style="height:4px;background:var(--bg3);border-radius:2px;margin-top:5px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:2px"></div></div>'
       +'<button class="l10-del-btn" style="font-size:10px;padding:0;margin-top:3px" onclick="l10DelMonth('+i+')">\u00D7 remove</button>'
@@ -3714,14 +3714,14 @@ function l10RenderIssues() {
     var col = priCol[issue.priority]||'var(--ink3)';
     return '<div class="l10-issue-row">'
       +'<select style="padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:10px;font-weight:700;background:'+col+'22;color:'+col+';cursor:pointer;flex-shrink:0" '
-        +'onchange="l10SetIssue('+i+',\'priority\',this.value);l10RenderIssues()">'
+        +'onchange="l10SetIssue('+i+','priority',this.value);l10RenderIssues()">'
         +['High','Med','Low'].map(function(p){return '<option'+(p===issue.priority?' selected':'')+'>'+p+'</option>';}).join('')
       +'</select>'
       +'<input type="text" value="'+escH(issue.text||'')+'" placeholder="Describe issue or risk\u2026" '
         +'style="flex:1;min-width:0;padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:var(--fb);background:var(--white)" '
-        +'onchange="l10SetIssue('+i+',\'text\',this.value)">'
+        +'onchange="l10SetIssue('+i+','text',this.value)">'
       +'<select style="width:80px;flex-shrink:0;padding:4px 5px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--fb);background:var(--white);cursor:pointer" '
-        +'onchange="l10SetIssue('+i+',\'owner\',this.value)">'
+        +'onchange="l10SetIssue('+i+','owner',this.value)">'
         +'<option value="">Owner</option>'
         +L10_OWNERS.map(function(o){return '<option'+(o===issue.owner?' selected':'')+'>'+o+'</option>';}).join('')
       +'</select>'
@@ -3755,10 +3755,10 @@ function l10RenderActions() {
       +'</td>'
       +'<td><input type="text" value="'+escH(a.text||'')+'" placeholder="Action\u2026" '
         +'style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:var(--fb);background:var(--white);'+(a.done?'text-decoration:line-through;color:var(--ink3)':'')+'" '
-        +'onchange="l10SetAction('+i+',\'text\',this.value)"></td>'
+        +'onchange="l10SetAction('+i+','text',this.value)"></td>'
       +'<td style="min-width:90px">'
         +'<select style="width:100%;padding:4px 5px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--fb);background:var(--white);cursor:pointer" '
-          +'onchange="l10SetAction('+i+',\'owner\',this.value)">'
+          +'onchange="l10SetAction('+i+','owner',this.value)">'
           +'<option value="">—</option>'
           +L10_OWNERS.map(function(o){return '<option'+(o===a.owner?' selected':'')+'>'+o+'</option>';}).join('')
         +'</select>'
@@ -3766,7 +3766,7 @@ function l10RenderActions() {
       +'<td style="min-width:110px">'
         +'<input type="date" value="'+(a.due||'')+'" '
           +'style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--fb);background:var(--white);color:'+(overdue?'var(--red)':'var(--ink)')+'" '
-          +'onchange="l10SetAction('+i+',\'due\',this.value)">'
+          +'onchange="l10SetAction('+i+','due',this.value)">'
         +(overdue?'<div style="font-size:9px;color:var(--red);font-weight:700;margin-top:2px">OVERDUE</div>':'')
       +'</td>'
       +'<td><button class="l10-del-btn" onclick="l10DelAction('+i+')">\u00D7</button></td>'
@@ -4176,13 +4176,13 @@ function fcRenderForecastGrid(){
         return '<td style="padding:5px 6px;border-bottom:0.5px solid var(--mist);'+(isCur?'background:rgba(200,169,110,.06)':'')+'">'
           +'<input type="number" value="'+(v||'')+'" placeholder="" '
           +'class="fc-month-inp'+(v?' has-val':'')+'" '
-          +'onchange="dashSetFee(\''+p.id+'\',\''+m+'\',this.value)" '
-          +'oninput="this.className=\'fc-month-inp\'+(this.value&&+this.value>0?\' has-val\':\'\')">'
+          +'onchange="dashSetFee(''+p.id+'',''+m+'',this.value)" '
+          +'oninput="this.className='fc-month-inp'+(this.value&&+this.value>0?' has-val':'')">'
         +'</td>';
       }).join('')
       +'<td style="padding:10px;text-align:right;font-weight:700;font-size:12px;color:var(--teal);border-bottom:0.5px solid var(--mist)">'+(wt?dashFmt(wt):'&mdash;')+'</td>'
       +'<td style="padding:10px 6px;border-bottom:0.5px solid var(--mist)">'
-        +'<button style="padding:2px 6px;background:none;border:none;color:var(--red);cursor:pointer;opacity:.3;font-size:14px" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.3" onclick="dashDelProject(\''+p.id+'\')">\u00D7</button>'
+        +'<button style="padding:2px 6px;background:none;border:none;color:var(--red);cursor:pointer;opacity:.3;font-size:14px" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.3" onclick="dashDelProject(''+p.id+'')">\u00D7</button>'
       +'</td>'
     +'</tr>';
   }).join('');
@@ -4294,8 +4294,8 @@ function dashRenderPipeline(){
       +'<td style="padding:11px 16px;font-size:11px;color:var(--slate)">'+escH(p.stage||'')+'</td>'
       +'<td style="padding:11px 16px;font-size:11px;color:var(--steel);max-width:180px">'+escH(p.notes||'')+'</td>'
       +'<td style="padding:11px 16px;white-space:nowrap">'
-        +'<button class="btn btn-gold btn-sm" onclick="dashPromote(\''+p.id+'\')">&#x2191; Promote</button> '
-        +'<button class="btn btn-danger btn-sm" onclick="dashDelProject(\''+p.id+'\')">&#x2715;</button>'
+        +'<button class="btn btn-gold btn-sm" onclick="dashPromote(''+p.id+'')">&#x2191; Promote</button> '
+        +'<button class="btn btn-danger btn-sm" onclick="dashDelProject(''+p.id+'')">&#x2715;</button>'
       +'</td>'
     +'</tr>';
   }).join('');
@@ -4442,8 +4442,8 @@ function fcRenderScorecard(){
       var v=ben.workWon[wi]||0;
       return '<td style="padding:4px 4px;text-align:center">'
         +'<input type="number" class="sc-inp'+(v?' has-val':'')+'" value="'+(v||'')+'" placeholder="\u2014" '
-        +'onchange="dashSetBenWon(\''+qtr+'\','+wi+',this.value)" '
-        +'oninput="this.className=\'sc-inp\'+(this.value&&+this.value>0?\' has-val\':\'\')">'
+        +'onchange="dashSetBenWon(''+qtr+'','+wi+',this.value)" '
+        +'oninput="this.className='sc-inp'+(this.value&&+this.value>0?' has-val':'')">'
       +'</td>';
     }).join('');
 
@@ -4483,8 +4483,8 @@ function fcRenderScorecard(){
           }
           return '<td style="padding:3px 4px;text-align:center;border-bottom:0.5px solid var(--mist)">'
             +'<input type="number" class="sc-inp'+(v?' has-val':'')+'" value="'+(v||'')+'" placeholder="\u2014" '
-            +'onchange="dashSetTeamHrs(\''+qtr+'\',\''+mem+'\',\''+row+'\','+wi+',this.value)" '
-            +'oninput="this.className=\'sc-inp\'+(this.value&&+this.value>0?\' has-val\':\'\')">'
+            +'onchange="dashSetTeamHrs(''+qtr+'',''+mem+'',''+row+'','+wi+',this.value)" '
+            +'oninput="this.className='sc-inp'+(this.value&&+this.value>0?' has-val':'')">'
           +'</td>';
         }).join('')
         +'<td style="padding:7px 10px;text-align:right;border-bottom:0.5px solid var(--mist);font-size:11px;font-weight:700;color:'+(hasData?rowCols[row]:'var(--mist)')+'">'+(hasData?Math.round(qTotal*10)/10:'&mdash;')+'</td>'
@@ -4735,7 +4735,7 @@ function syncPickUser() {
     +'<label class="form-label" style="font-size:14px;margin-bottom:12px">Who are you?</label>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
     +names.map(function(n){
-      return '<button onclick="syncSetUser(\''+n+'\')" style="padding:14px;border:2px solid var(--border);border-radius:8px;background:var(--white);cursor:pointer;font-family:var(--ff);font-size:13px;font-weight:600;color:var(--ink);transition:all .15s" onmouseover="this.style.borderColor=\'var(--gold)\';this.style.background=\'var(--gold-l)\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.background=\'var(--white)\'">'+n+'</button>';
+      return '<button onclick="syncSetUser(''+n+'')" style="padding:14px;border:2px solid var(--border);border-radius:8px;background:var(--white);cursor:pointer;font-family:var(--ff);font-size:13px;font-weight:600;color:var(--ink);transition:all .15s" onmouseover="this.style.borderColor='var(--gold)';this.style.background='var(--gold-l)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--white)'">'+n+'</button>';
     }).join('')
     +'</div>'
     +'</div></div>';
