@@ -194,7 +194,7 @@ body{background:var(--bg);font-family:var(--fb);color:var(--ink);font-size:14px;
 .additional-tag{background:var(--blue-l);color:var(--blue)}
 .both-tag{background:var(--bg3);color:var(--ink3)}
 /* PROJECTS */
-.proj-layout{display:grid;grid-template-columns:260px 1fr;gap:14px;min-height:500px}
+.proj-layout{display:grid;grid-template-columns:280px 1fr;gap:16px;min-height:500px}
 @media(max-width:700px){.proj-layout{grid-template-columns:1fr}}
 .proj-sidebar{display:flex;flex-direction:column;gap:8px}
 .proj-new-btn{width:100%;padding:10px;background:var(--ink);color:#fff;border:none;border-radius:var(--r);font-family:var(--ff);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .15s}
@@ -2238,7 +2238,7 @@ function aiAsk() {
   aiIsThinking = true;
 
   // Determine endpoint
-  var useProxy = AI_PROXY_URL && AI_PROXY_URL !== 'https://clw-ai.aa-maugeri.workers.dev/';
+  var useProxy = AI_PROXY_URL && AI_PROXY_URL !== 'https://clw-ai.aa-maugeri.workers.dev';
   var useDirect = !useProxy && ANTHROPIC_API_KEY && ANTHROPIC_API_KEY !== 'YOUR_API_KEY_HERE';
 
   if (!useProxy && !useDirect) {
@@ -2385,17 +2385,37 @@ function renderProjList(){
   var el=document.getElementById('proj-list');if(!el)return;
   if(!projects.length){el.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--ink3)">No projects yet.</div>';renderWorkload();return;}
   el.innerHTML=projects.map(function(p){
-    var col={Active:'var(--teal)',OnHold:'var(--amber)','On Hold':'var(--amber)',Complete:'var(--blue)',Pending:'var(--ink3)'}[p.status]||'var(--ink3)';
-    var logged=p.timeLogs.reduce(function(a,t){return a+(parseFloat(t.hrs)||0);},0);
-    return '<div class="proj-list-item'+(p.id===activeProjectId?' active':'')+'" onclick="selectProject(\''+p.id+'\')">'
+    var statusColMap={Active:'var(--teal)','On Hold':'var(--amber)',Complete:'var(--blue)',Pending:'var(--ink3)'};
+    var col=statusColMap[p.status]||'var(--ink3)';
+    var budget=parseFloat(p.harvestBudget)||p.tasks.reduce(function(a,t){return a+(parseFloat(t.fee)||0);},0);
+    var spent=parseFloat(p.harvestSpent)||0;
+    var pct=budget>0?Math.round(spent/budget*100):0;
+    var over=pct>100;
+    var barCol=over?'var(--red)':pct>=80?'var(--amber)':'var(--teal)';
+    var barW=Math.min(pct,100);
+    return '<div class="proj-list-item'+(p.id===activeProjectId?' active':'')+'" onclick="selectProject(''+p.id+'')">'
       +'<div class="proj-list-name">'+escH(p.name)+'</div>'
-      +'<div class="proj-list-meta">'+escH(p.code||'—')+' &middot; '+escH(p.status)+'</div>'
-      +'<div class="proj-list-badges"><span class="tag" style="background:'+col+'22;color:'+col+';margin:0">'+escH(p.status)+'</span>'
-      +' <span class="tag tag-gray" style="margin:0">'+logged.toFixed(1)+'h</span></div>'
+      +'<div class="proj-list-meta">'+escH(p.address||p.code||'')+'</div>'
+      +(budget>0
+        ?'<div style="margin-top:5px">'
+          +'<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--ink3);margin-bottom:2px">'
+            +'<span style="color:'+barCol+';font-weight:600">'+(over?'&#x26A0; '+pct+'%':pct+'%')+'</span>'
+            +'<span>'+fmt(budget)+'</span>'
+          +'</div>'
+          +'<div style="height:3px;background:var(--bg3);border-radius:2px;overflow:hidden">'
+            +'<div style="height:100%;width:'+barW+'%;background:'+barCol+';border-radius:2px"></div>'
+          +'</div>'
+        +'</div>'
+        :'')
+      +'<div style="margin-top:4px;display:flex;align-items:center;gap:4px;flex-wrap:wrap">'
+        +'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:'+col+'22;color:'+col+'">'+escH(p.status)+'</span>'
+        +(p.l10Owner?'<span style="font-size:9px;color:var(--ink3)">'+escH(p.l10Owner)+'</span>':'')
+      +'</div>'
     +'</div>';
   }).join('');
   renderWorkload();
 }
+
 function renderWorkload(){
   var el=document.getElementById('workload-panel');if(!el)return;
   var active=projects.filter(function(p){return p.status==='Active';});
