@@ -2238,7 +2238,7 @@ function aiAsk() {
   aiIsThinking = true;
 
   // Determine endpoint
-  var useProxy = AI_PROXY_URL && AI_PROXY_URL !== 'https://clw-ai.aa-maugeri.workers.dev';
+  var useProxy = AI_PROXY_URL && AI_PROXY_URL !== 'YOUR_WORKER_URL_HERE';
   var useDirect = !useProxy && ANTHROPIC_API_KEY && ANTHROPIC_API_KEY !== 'YOUR_API_KEY_HERE';
 
   if (!useProxy && !useDirect) {
@@ -2366,7 +2366,7 @@ function aiGoTab(tabId) {
 
 // ── Cloudflare Worker proxy URL ─────────────────────────────
 // Set this after deploying clw-ai-worker.js to Cloudflare Workers
-var AI_PROXY_URL = 'YOUR_WORKER_URL_HERE'; // e.g. https://clw-ai.yourname.workers.dev
+var AI_PROXY_URL = 'https://clw-ai.aa-maugeri.workers.dev';
 
 var ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE'; // only needed if NOT using the proxy
 
